@@ -15,3 +15,4 @@ ulid.workspace = true
 chrono.workspace = true
 config.workspace = true
 async-trait.workspace = true
+fred.workspace = true

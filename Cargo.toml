@@ -54,6 +54,9 @@ async-trait = "0.1"
 utoipa = { version = "5", features = ["axum_extras", "chrono", "ulid"] }
 utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }
 
+# Cache
+fred = { version = "9", features = ["enable-rustls", "partial-tracing"] }
+
 # Internal Crates
 axum-common = { path = "crates/common" }
 axum-domain = { path = "crates/domain" }

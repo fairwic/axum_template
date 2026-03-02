@@ -12,6 +12,7 @@ use ulid::Ulid;
 #[derive(Default)]
 struct InMemoryUserRepo {
     inner: Mutex<HashMap<Ulid, User>>,
+    find_calls: Mutex<usize>,
 }
 
 #[async_trait]
@@ -23,6 +24,8 @@ impl UserRepository for InMemoryUserRepo {
     }
 
     async fn find_by_id(&self, id: Ulid) -> AppResult<Option<User>> {
+        let mut count = self.find_calls.lock().await;
+        *count += 1;
         let guard = self.inner.lock().await;
         Ok(guard.get(&id).cloned())
     }
@@ -44,6 +47,13 @@ impl UserRepository for InMemoryUserRepo {
     }
 }
 
+impl InMemoryUserRepo {
+    async fn find_call_count(&self) -> usize {
+        let guard = self.find_calls.lock().await;
+        *guard
+    }
+}
+
 #[tokio::test]
 async fn test_create_and_get_user() {
     let repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
@@ -57,4 +67,21 @@ async fn test_create_and_get_user() {
     let fetched = service.get_user(created.id).await.unwrap();
     assert_eq!(fetched.name, "Alice");
     assert_eq!(fetched.email, "a@b.com");
+}
+
+#[tokio::test]
+async fn test_get_user_reads_cache_first() {
+    let repo = Arc::new(InMemoryUserRepo::default());
+    let service = UserService::new(repo.clone());
+
+    let created = service
+        .create_user("Cache".into(), "cache@b.com".into())
+        .await
+        .unwrap();
+
+    let _first = service.get_user(created.id).await.unwrap();
+    let _second = service.get_user(created.id).await.unwrap();
+
+    let calls = repo.find_call_count().await;
+    assert_eq!(calls, 1, "expected repo to be called once due to cache");
 }
