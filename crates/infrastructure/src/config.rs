@@ -7,6 +7,8 @@ use serde::Deserialize;
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
+    pub redis: RedisConfig,
+    pub cache: CacheConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -30,6 +32,19 @@ pub struct DatabaseConfig {
     pub max_lifetime_secs: u64,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct RedisConfig {
+    pub url: String,
+    #[serde(default = "default_redis_max_connections")]
+    pub max_connections: usize,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct CacheConfig {
+    #[serde(default = "default_cache_ttl_secs")]
+    pub default_ttl_secs: u64,
+}
+
 fn default_max_connections() -> u32 {
     20
 }
@@ -44,6 +59,12 @@ fn default_idle_timeout() -> u64 {
 }
 fn default_max_lifetime() -> u64 {
     1800
+}
+fn default_redis_max_connections() -> usize {
+    10
+}
+fn default_cache_ttl_secs() -> u64 {
+    300
 }
 
 impl DatabaseConfig {
