@@ -1,0 +1,36 @@
+# Build artifacts
+/target/
+debug/
+release/
+.mcp/
+.worktrees/
+.worktrees/
+
+
+# Dependencies
+Cargo.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+*.profraw
+*.profdata

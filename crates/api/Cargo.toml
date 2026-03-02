@@ -1,0 +1,25 @@
+[package]
+name = "axum-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum-common.workspace = true
+axum-domain.workspace = true
+axum-application.workspace = true
+axum-infrastructure.workspace = true
+axum.workspace = true
+tower.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ulid.workspace = true
+chrono.workspace = true
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true
+
+# test cicd
+
+[dev-dependencies]
+async-trait.workspace = true

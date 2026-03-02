@@ -1,0 +1,17 @@
+[package]
+name = "axum-application"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum-common.workspace = true
+axum-domain.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+serde.workspace = true
+ulid.workspace = true
+chrono.workspace = true
+utoipa.workspace = true
+
+[dev-dependencies]
+async-trait.workspace = true

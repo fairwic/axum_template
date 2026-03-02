@@ -1,0 +1,19 @@
+[package]
+name = "axum-server"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "axum-server"
+path = "src/main.rs"
+
+[dependencies]
+axum-application.workspace = true
+axum-infrastructure.workspace = true
+axum-api.workspace = true
+axum.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+sqlx.workspace = true
+anyhow.workspace = true

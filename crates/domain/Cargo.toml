@@ -1,0 +1,12 @@
+[package]
+name = "axum-domain"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum-common.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+ulid.workspace = true
+serde.workspace = true
+async-trait.workspace = true

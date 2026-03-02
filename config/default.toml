@@ -1,0 +1,11 @@
+[server]
+host = "0.0.0.0"
+port = 3000
+
+[database]
+url = "postgres://postgres:postgres123@localhost:5432/testdb"
+max_connections = 20
+min_connections = 5
+acquire_timeout_secs = 3
+idle_timeout_secs = 600
+max_lifetime_secs = 1800

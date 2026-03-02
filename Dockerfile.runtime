@@ -1,0 +1,6 @@
+FROM amazonlinux:2023
+WORKDIR /app
+COPY dist/axum-server /app/axum-server
+RUN chmod +x /app/axum-server
+EXPOSE 8080
+CMD ["/app/axum-server"]
