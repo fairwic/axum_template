@@ -3,10 +3,12 @@ use std::sync::Arc;
 
 use axum::{body::{Body, to_bytes}, http::Request};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, StoreService, UserService};
+use axum_application::{AdminService, CategoryService, StoreService, UserService};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
+use axum_domain::category::entity::Category;
+use axum_domain::category::repo::CategoryRepository;
 use axum_domain::store::entity::{Store, StoreStatus};
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
@@ -74,6 +76,29 @@ impl StoreRepository for InMemoryStoreRepo {
 }
 
 #[derive(Default)]
+struct InMemoryCategoryRepo {
+    inner: Mutex<HashMap<String, Category>>,
+}
+
+#[async_trait]
+impl CategoryRepository for InMemoryCategoryRepo {
+    async fn list_by_store(&self, store_id: ulid::Ulid) -> AppResult<Vec<Category>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .values()
+            .filter(|item| item.store_id == store_id)
+            .cloned()
+            .collect())
+    }
+
+    async fn create(&self, category: &Category) -> AppResult<Category> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(category.id.to_string(), category.clone());
+        Ok(category.clone())
+    }
+}
+
+#[derive(Default)]
 struct FakeLbs;
 
 #[async_trait]
@@ -94,6 +119,8 @@ async fn test_stores_nearby() {
     let lbs: Arc<dyn axum_application::services::store_service::LbsService> =
         Arc::new(FakeLbs::default());
     let store_service = StoreService::new(store_repo.clone(), lbs);
+    let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo::default());
+    let category_service = CategoryService::new(category_repo);
 
     let store = Store::new(
         "Store A".into(),
@@ -111,7 +138,14 @@ async fn test_stores_nearby() {
     .unwrap();
     store_repo.create(&store).await.unwrap();
 
-    let state = AppState::new(user_service, admin_service, store_service, "secret".into(), 3600);
+    let state = AppState::new(
+        user_service,
+        admin_service,
+        store_service,
+        category_service,
+        "secret".into(),
+        3600,
+    );
     let app = create_router(state);
 
     let req = Request::builder()

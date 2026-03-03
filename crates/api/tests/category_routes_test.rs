@@ -7,7 +7,7 @@ use axum_application::{AdminService, CategoryService, StoreService, UserService}
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
-use axum_domain::category::entity::Category;
+use axum_domain::category::entity::{Category, CategoryStatus};
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
@@ -17,6 +17,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
+use ulid::Ulid;
 
 #[derive(Default)]
 struct InMemoryUserRepo {
@@ -82,7 +83,7 @@ struct InMemoryCategoryRepo {
 
 #[async_trait]
 impl CategoryRepository for InMemoryCategoryRepo {
-    async fn list_by_store(&self, store_id: ulid::Ulid) -> AppResult<Vec<Category>> {
+    async fn list_by_store(&self, store_id: Ulid) -> AppResult<Vec<Category>> {
         let guard = self.inner.lock().await;
         Ok(guard
             .values()
@@ -108,39 +109,38 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
-fn create_test_app() -> axum::Router {
-    let repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
-    let service = UserService::new(repo);
+#[tokio::test]
+async fn test_list_categories() {
+    let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
     let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
-    let admin_service = AdminService::new(admin_repo);
     let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo::default());
+
+    let user_service = UserService::new(user_repo);
+    let admin_service = AdminService::new(admin_repo);
     let lbs: Arc<dyn axum_application::services::store_service::LbsService> =
         Arc::new(FakeLbs::default());
     let store_service = StoreService::new(store_repo, lbs);
-    let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo::default());
-    let category_service = CategoryService::new(category_repo);
+    let category_service = CategoryService::new(category_repo.clone());
+
+    let store_id = Ulid::new();
+    let category = Category::new(store_id, "饮料".into(), 1, CategoryStatus::On).unwrap();
+    category_repo.create(&category).await.unwrap();
+
     let state = AppState::new(
-        service,
+        user_service,
         admin_service,
         store_service,
         category_service,
         "secret".into(),
         3600,
     );
-    create_router(state)
-}
-
-#[tokio::test]
-async fn test_wechat_login_returns_token() {
-    let app = create_test_app();
+    let app = create_router(state);
 
     let req = Request::builder()
-        .method("POST")
-        .uri("/api/v1/auth/wechat_login")
-        .header("content-type", "application/json")
-        .body(Body::from(
-            r#"{"openid":"openid-1","nickname":"Alice","avatar":null}"#,
-        ))
+        .method("GET")
+        .uri(format!("/api/v1/categories?store_id={}", store_id))
+        .body(Body::empty())
         .unwrap();
 
     let res = app.oneshot(req).await.unwrap();
@@ -148,6 +148,5 @@ async fn test_wechat_login_returns_token() {
     let value: Value = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(value["success"], true);
-    assert!(value["data"]["token"].as_str().unwrap_or("").len() > 0);
-    assert_eq!(value["data"]["user"]["openid"], "openid-1");
+    assert_eq!(value["data"][0]["name"], "饮料");
 }
