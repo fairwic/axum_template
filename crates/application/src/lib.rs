@@ -8,8 +8,10 @@ pub mod dtos {
 
 pub mod services {
     pub mod admin_service;
+    pub mod store_service;
     pub mod user_service;
 }
 
 pub use services::admin_service::AdminService;
+pub use services::store_service::StoreService;
 pub use services::user_service::UserService;

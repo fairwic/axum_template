@@ -7,7 +7,7 @@ use axum_application::{AdminService, StoreService, UserService};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
-use axum_domain::store::entity::Store;
+use axum_domain::store::entity::{Store, StoreStatus};
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
@@ -79,34 +79,45 @@ struct FakeLbs;
 #[async_trait]
 impl axum_application::services::store_service::LbsService for FakeLbs {
     async fn distance_km(&self, _from: (f64, f64), _to: (f64, f64)) -> AppResult<f64> {
-        Ok(0.0)
+        Ok(1.2)
     }
 }
 
-fn create_test_app() -> axum::Router {
-    let repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
-    let service = UserService::new(repo);
+#[tokio::test]
+async fn test_stores_nearby() {
+    let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
     let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
-    let admin_service = AdminService::new(admin_repo);
     let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+
+    let user_service = UserService::new(user_repo);
+    let admin_service = AdminService::new(admin_repo);
     let lbs: Arc<dyn axum_application::services::store_service::LbsService> =
         Arc::new(FakeLbs::default());
-    let store_service = StoreService::new(store_repo, lbs);
-    let state = AppState::new(service, admin_service, store_service, "secret".into(), 3600);
-    create_router(state)
-}
+    let store_service = StoreService::new(store_repo.clone(), lbs);
 
-#[tokio::test]
-async fn test_wechat_login_returns_token() {
-    let app = create_test_app();
+    let store = Store::new(
+        "Store A".into(),
+        "Addr".into(),
+        30.0,
+        120.0,
+        "13800000000".into(),
+        "9-21".into(),
+        StoreStatus::Open,
+        3.0,
+        0,
+        2,
+        2,
+    )
+    .unwrap();
+    store_repo.create(&store).await.unwrap();
+
+    let state = AppState::new(user_service, admin_service, store_service, "secret".into(), 3600);
+    let app = create_router(state);
 
     let req = Request::builder()
-        .method("POST")
-        .uri("/api/v1/auth/wechat_login")
-        .header("content-type", "application/json")
-        .body(Body::from(
-            r#"{"openid":"openid-1","nickname":"Alice","avatar":null}"#,
-        ))
+        .method("GET")
+        .uri("/api/v1/stores/nearby?lat=30.0&lng=120.0")
+        .body(Body::empty())
         .unwrap();
 
     let res = app.oneshot(req).await.unwrap();
@@ -114,6 +125,5 @@ async fn test_wechat_login_returns_token() {
     let value: Value = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(value["success"], true);
-    assert!(value["data"]["token"].as_str().unwrap_or("").len() > 0);
-    assert_eq!(value["data"]["user"]["openid"], "openid-1");
+    assert_eq!(value["data"][0]["name"], "Store A");
 }
