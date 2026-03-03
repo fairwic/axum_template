@@ -4,9 +4,12 @@
 
 pub mod error;
 pub mod cache;
+pub mod admin;
 pub mod user;
 
 pub use error::DomainError;
 pub use cache::CacheService;
+pub use admin::entity::{Admin, AdminRole};
+pub use admin::repo::AdminRepository;
 pub use user::entity::User;
 pub use user::repo::UserRepository;

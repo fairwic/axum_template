@@ -5,13 +5,14 @@ use utoipa::OpenApi;
 
 use crate::handlers::health_handler;
 use crate::openapi::ApiDoc;
-use crate::routes::{auth, member};
+use crate::routes::{admin_auth, auth, member};
 use crate::state::AppState;
 
 pub fn create_router(state: AppState) -> Router {
     let api_routes = Router::new()
         .merge(auth::routes())
         .merge(member::routes());
+    let admin_routes = Router::new().merge(admin_auth::routes());
 
     let openapi_route = Router::new().route(
         "/api-docs/openapi.json",
@@ -55,5 +56,6 @@ pub fn create_router(state: AppState) -> Router {
         .merge(swagger_ui_route)
         .route("/health", get(health_handler::health_check))
         .nest("/api/v1", api_routes)
+        .nest("/api/admin/v1", admin_routes)
         .with_state(state)
 }

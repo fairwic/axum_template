@@ -5,7 +5,7 @@ use axum::{body::{Body, to_bytes}, http::Request};
 use axum_api::{create_router, AppState};
 use axum_application::{AdminService, UserService};
 use axum_common::AppResult;
-use axum_domain::admin::entity::Admin;
+use axum_domain::admin::entity::{Admin, AdminRole};
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
@@ -52,26 +52,26 @@ impl AdminRepository for InMemoryAdminRepo {
     }
 }
 
-fn create_test_app() -> axum::Router {
-    let repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
-    let service = UserService::new(repo);
-    let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
-    let admin_service = AdminService::new(admin_repo);
-    let state = AppState::new(service, admin_service, "secret".into(), 3600);
-    create_router(state)
-}
-
 #[tokio::test]
-async fn test_wechat_login_returns_token() {
-    let app = create_test_app();
+async fn test_admin_login_returns_token() {
+    let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
+    let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
+    let user_service = UserService::new(user_repo);
+    let admin_service = AdminService::new(admin_repo.clone());
+
+    admin_service
+        .create_admin("13800000000".into(), "pass".into(), AdminRole::Platform, None)
+        .await
+        .unwrap();
+
+    let state = AppState::new(user_service, admin_service, "secret".into(), 3600);
+    let app = create_router(state);
 
     let req = Request::builder()
         .method("POST")
-        .uri("/api/v1/auth/wechat_login")
+        .uri("/api/admin/v1/auth/login")
         .header("content-type", "application/json")
-        .body(Body::from(
-            r#"{"openid":"openid-1","nickname":"Alice","avatar":null}"#,
-        ))
+        .body(Body::from(r#"{"phone":"13800000000","password":"pass"}"#))
         .unwrap();
 
     let res = app.oneshot(req).await.unwrap();
@@ -80,5 +80,5 @@ async fn test_wechat_login_returns_token() {
 
     assert_eq!(value["success"], true);
     assert!(value["data"]["token"].as_str().unwrap_or("").len() > 0);
-    assert_eq!(value["data"]["user"]["openid"], "openid-1");
+    assert_eq!(value["data"]["admin"]["phone"], "13800000000");
 }

@@ -53,6 +53,9 @@ config = "0.14"
 # Async Trait
 async-trait = "0.1"
 
+# Password Hashing
+bcrypt = "0.15"
+
 # OpenAPI Documentation
 utoipa = { version = "5", features = ["axum_extras", "chrono", "ulid"] }
 utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }

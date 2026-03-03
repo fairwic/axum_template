@@ -1,6 +1,6 @@
 use utoipa::OpenApi;
 
-use crate::handlers::{auth_handler, member_handler};
+use crate::handlers::{admin_auth_handler, auth_handler, member_handler};
 use axum_application::dtos::user_dto::{UserResponse, WechatLoginDto};
 use axum_common::response;
 
@@ -13,6 +13,7 @@ use axum_common::response;
     ),
     paths(
         auth_handler::wechat_login,
+        admin_auth_handler::admin_login,
         member_handler::member_status,
         member_handler::member_benefits,
     ),
@@ -21,9 +22,13 @@ use axum_common::response;
             WechatLoginDto,
             UserResponse,
             auth_handler::LoginResponse,
+            admin_auth_handler::AdminLoginDto,
+            admin_auth_handler::AdminResponse,
+            admin_auth_handler::AdminLoginResponse,
             member_handler::MemberStatusResponse,
             member_handler::MemberBenefitsResponse,
             response::ApiResponse<auth_handler::LoginResponse>,
+            response::ApiResponse<admin_auth_handler::AdminLoginResponse>,
             response::ApiResponse<member_handler::MemberStatusResponse>,
             response::ApiResponse<member_handler::MemberBenefitsResponse>,
             response::ErrorDetail,
@@ -32,6 +37,7 @@ use axum_common::response;
     ),
     tags(
         (name = "Auth", description = "Login and tokens"),
+        (name = "Admin", description = "Admin login"),
         (name = "Member", description = "Member status and benefits"),
         (name = "System", description = "System endpoints")
     )
