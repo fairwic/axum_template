@@ -14,4 +14,8 @@ pub fn routes() -> Router<AppState> {
         .route("/orders", get(order_handler::list_orders))
         .route("/orders/:id", get(order_handler::get_order))
         .route("/orders/:id/cancel", post(order_handler::cancel_order))
+        .route(
+            "/orders/:id/repurchase",
+            post(order_handler::repurchase_order),
+        )
 }

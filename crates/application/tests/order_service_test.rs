@@ -487,3 +487,58 @@ async fn test_order_auto_accept_pending_orders() {
     let accepted = service.get_by_user(user_id, created.id).await.unwrap();
     assert_eq!(accepted.status, GoodsOrderStatus::Accepted);
 }
+
+#[tokio::test]
+async fn test_order_repurchase_creates_new_pending_pay_order() {
+    let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
+
+    let user_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
+    let product = Product::new(
+        store_id,
+        Ulid::new(),
+        "椰子水".into(),
+        None,
+        "img".into(),
+        vec![],
+        990,
+        None,
+        10,
+        ProductStatus::On,
+        vec![],
+    )
+    .unwrap();
+    product_repo.create(&product).await.unwrap();
+
+    let origin = service
+        .create(CreateGoodsOrderInput {
+            user_id,
+            store_id,
+            delivery_type: DeliveryType::Delivery,
+            items: vec![GoodsOrderItem {
+                product_id: product.id,
+                title_snapshot: "椰子水".into(),
+                price_snapshot: 990,
+                qty: 1,
+            }],
+            distance_km: Some(2.0),
+            address_snapshot: Some(serde_json::json!({"detail":"A-101"})),
+            store_snapshot: None,
+            remark: Some("不要冰".into()),
+        })
+        .await
+        .unwrap();
+
+    let repurchased = service.repurchase(user_id, origin.id).await.unwrap();
+    assert_ne!(repurchased.id, origin.id);
+    assert_eq!(repurchased.status, GoodsOrderStatus::PendingPay);
+    assert_eq!(repurchased.pay_status, PayStatus::Unpaid);
+    assert_eq!(repurchased.items.len(), 1);
+    assert_eq!(repurchased.items[0].qty, 1);
+    assert_eq!(repurchased.amount_payable, 990);
+}

@@ -309,3 +309,22 @@ pub async fn cancel_order(
         .await?;
     Ok(ApiResponse::success(to_response(order)))
 }
+
+#[utoipa::path(
+    post,
+    path = "/orders/{id}/repurchase",
+    params(("id" = String, Path, description = "Order ID")),
+    responses((status = 200, body = ApiResponse<OrderResponse>)),
+    tag = "Order"
+)]
+/// 接口功能：repurchase_order，基于历史订单再次下单
+pub async fn repurchase_order(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(order_id): Path<String>,
+) -> AppResult<ApiResponse<OrderResponse>> {
+    let user_id = parse_user_id(&headers)?;
+    let order_id = parse_ulid(&order_id, "order_id")?;
+    let order = get_service(&state)?.repurchase(user_id, order_id).await?;
+    Ok(ApiResponse::success(to_response(order)))
+}

@@ -111,6 +111,42 @@ impl OrderService {
         Ok(updated)
     }
 
+    pub async fn repurchase(&self, user_id: Ulid, order_id: Ulid) -> AppResult<GoodsOrder> {
+        let source = self.must_get_for_user(user_id, order_id).await?;
+        let ids: Vec<Ulid> = source.items.iter().map(|item| item.product_id).collect();
+        let products = self.product_repo.find_by_ids(source.store_id, &ids).await?;
+        if products.len() != ids.len() {
+            return Err(AppError::Validation("商品不存在或已下架".into()));
+        }
+
+        let product_map: HashMap<Ulid, axum_domain::Product> =
+            products.into_iter().map(|item| (item.id, item)).collect();
+        let mut items = Vec::with_capacity(source.items.len());
+        for item in &source.items {
+            let product = product_map
+                .get(&item.product_id)
+                .ok_or_else(|| AppError::Validation("商品不存在或已下架".into()))?;
+            items.push(GoodsOrderItem {
+                product_id: product.id,
+                title_snapshot: product.title.clone(),
+                price_snapshot: product.price,
+                qty: item.qty,
+            });
+        }
+
+        self.create(CreateGoodsOrderInput {
+            user_id,
+            store_id: source.store_id,
+            delivery_type: source.delivery_type,
+            items,
+            distance_km: source.distance_km,
+            address_snapshot: source.address_snapshot,
+            store_snapshot: source.store_snapshot,
+            remark: source.remark,
+        })
+        .await
+    }
+
     pub async fn list_by_user(&self, user_id: Ulid) -> AppResult<Vec<GoodsOrder>> {
         self.repo.list_by_user(user_id).await
     }

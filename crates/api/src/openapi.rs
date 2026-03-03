@@ -53,6 +53,7 @@ use axum_common::response::{self, PagedResponse};
         order_handler::list_orders,
         order_handler::get_order,
         order_handler::cancel_order,
+        order_handler::repurchase_order,
         runner_order_handler::create_runner_order,
         runner_order_handler::pay_runner_order,
         runner_order_handler::list_runner_orders,

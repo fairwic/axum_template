@@ -651,6 +651,20 @@ async fn test_goods_order_and_runner_order_flow() {
     assert_eq!(cancel_unpaid_value["success"], true);
     assert_eq!(cancel_unpaid_value["data"]["pay_status"], "UNPAID");
 
+    let repurchase_req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/orders/{}/repurchase", unpaid_order_id))
+        .header("authorization", user_auth.clone())
+        .body(Body::empty())
+        .unwrap();
+    let repurchase_res = app.clone().oneshot(repurchase_req).await.unwrap();
+    let repurchase_body = to_bytes(repurchase_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let repurchase_value: Value = serde_json::from_slice(&repurchase_body).unwrap();
+    assert_eq!(repurchase_value["success"], true);
+    assert_eq!(repurchase_value["data"]["status"], "PENDING_PAY");
+
     let create_order_admin_payload = json!({
         "store_id": store_id.to_string(),
         "delivery_type": "DELIVERY",
