@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT cart_id, product_id, qty, price_snapshot FROM cart_items WHERE cart_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cart_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "qty",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "price_snapshot",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cec5cfb4b32c21a0b86e74650a5f95750c1f1d7b305673c72ef810c3c0a98307"
+}

@@ -3,10 +3,12 @@ use std::sync::Arc;
 
 use axum::{body::{Body, to_bytes}, http::Request};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, CategoryService, ProductService, StoreService, UserService};
+use axum_application::{AdminService, CartService, CategoryService, ProductService, StoreService, UserService};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
+use axum_domain::cart::entity::Cart;
+use axum_domain::cart::repo::CartRepository;
 use axum_domain::category::entity::Category;
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::product::entity::{Product, ProductStatus};
@@ -102,6 +104,58 @@ impl CategoryRepository for InMemoryCategoryRepo {
 }
 
 #[derive(Default)]
+struct InMemoryCartRepo {
+    carts: Mutex<HashMap<(Ulid, Ulid), Cart>>,
+}
+
+#[async_trait]
+impl CartRepository for InMemoryCartRepo {
+    async fn get_cart(&self, user_id: Ulid, store_id: Ulid) -> AppResult<Option<Cart>> {
+        let guard = self.carts.lock().await;
+        Ok(guard.get(&(user_id, store_id)).cloned())
+    }
+
+    async fn create_cart(&self, user_id: Ulid, store_id: Ulid) -> AppResult<Cart> {
+        let mut guard = self.carts.lock().await;
+        let cart = Cart::new(user_id, store_id);
+        guard.insert((user_id, store_id), cart.clone());
+        Ok(cart)
+    }
+
+    async fn upsert_item(
+        &self,
+        user_id: Ulid,
+        store_id: Ulid,
+        product_id: Ulid,
+        qty: i32,
+        price_snapshot: i32,
+    ) -> AppResult<()> {
+        let mut guard = self.carts.lock().await;
+        let cart = guard
+            .entry((user_id, store_id))
+            .or_insert_with(|| Cart::new(user_id, store_id));
+        cart.upsert_item(product_id, qty, price_snapshot);
+        Ok(())
+    }
+
+    async fn remove_item(&self, user_id: Ulid, store_id: Ulid, product_id: Ulid) -> AppResult<()> {
+        let mut guard = self.carts.lock().await;
+        if let Some(cart) = guard.get_mut(&(user_id, store_id)) {
+            cart.remove_item(product_id);
+        }
+        Ok(())
+    }
+
+    async fn clear(&self, user_id: Ulid, store_id: Ulid) -> AppResult<()> {
+        let mut guard = self.carts.lock().await;
+        if let Some(cart) = guard.get_mut(&(user_id, store_id)) {
+            cart.items.clear();
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default)]
 struct InMemoryProductRepo {
     inner: Mutex<HashMap<Ulid, Product>>,
 }
@@ -166,6 +220,7 @@ async fn test_products_list_and_search() {
     let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
     let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo::default());
     let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
 
     let user_service = UserService::new(user_repo);
     let admin_service = AdminService::new(admin_repo);
@@ -174,6 +229,7 @@ async fn test_products_list_and_search() {
     let store_service = StoreService::new(store_repo, lbs);
     let category_service = CategoryService::new(category_repo);
     let product_service = ProductService::new(product_repo.clone());
+    let cart_service = CartService::new(cart_repo);
 
     let store_id = Ulid::new();
     let category_id = Ulid::new();
@@ -199,6 +255,7 @@ async fn test_products_list_and_search() {
         store_service,
         category_service,
         product_service,
+        cart_service,
         "secret".into(),
         3600,
     );

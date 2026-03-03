@@ -8,7 +8,6 @@ use axum_domain::store::repo::StoreRepository;
 use async_trait::async_trait;
 
 #[async_trait]
-#[async_trait]
 pub trait LbsService: Send + Sync {
     async fn distance_km(&self, from: (f64, f64), to: (f64, f64)) -> AppResult<f64>;
 }

@@ -5,24 +5,30 @@ use utoipa::OpenApi;
 
 use crate::handlers::health_handler;
 use crate::openapi::ApiDoc;
-use crate::routes::{admin_auth, auth, category, member, product, store};
+use crate::routes::{admin_auth, admin_order, admin_runner_order, auth, cart, category, member, order, product, runner_order, store};
 use crate::state::AppState;
 
 pub fn create_router(state: AppState) -> Router {
-    let api_routes = Router::new()
+    let api_routes = Router::<AppState>::new()
         .merge(auth::routes())
         .merge(member::routes())
         .merge(store::routes())
+        .merge(cart::routes())
+        .merge(order::routes())
+        .merge(runner_order::routes())
         .merge(category::routes())
         .merge(product::routes());
-    let admin_routes = Router::new().merge(admin_auth::routes());
+    let admin_routes = Router::<AppState>::new()
+        .merge(admin_auth::routes())
+        .merge(admin_order::routes())
+        .merge(admin_runner_order::routes());
 
-    let openapi_route = Router::new().route(
+    let openapi_route = Router::<AppState>::new().route(
         "/api-docs/openapi.json",
         get(|| async { Json(ApiDoc::openapi()) }),
     );
 
-    let swagger_ui_route = Router::new().route(
+    let swagger_ui_route = Router::<AppState>::new().route(
         "/swagger-ui",
         get(|| async {
             axum::response::Html(
@@ -54,7 +60,7 @@ pub fn create_router(state: AppState) -> Router {
         }),
     );
 
-    Router::new()
+    Router::<AppState>::new()
         .merge(openapi_route)
         .merge(swagger_ui_route)
         .route("/health", get(health_handler::health_check))

@@ -1,7 +1,10 @@
 CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL
+    id VARCHAR(26) PRIMARY KEY,
+    openid VARCHAR(64) NOT NULL UNIQUE,
+    nickname VARCHAR(64),
+    avatar TEXT,
+    phone VARCHAR(20),
+    is_member BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

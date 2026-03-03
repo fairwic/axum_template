@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id, user_id, store_id, status,\n                express_company, pickup_code, delivery_address, receiver_name, receiver_phone,\n                remark, service_fee, distance_km, amount_payable,\n                pay_status, pay_time, cancel_reason, cancel_time,\n                accept_time, delivered_time, complete_time, created_at, updated_at\n            FROM runner_orders\n            WHERE store_id = $1\n            ORDER BY created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "store_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "express_company",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "pickup_code",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "delivery_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "receiver_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "receiver_phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "remark",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "service_fee",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "distance_km",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 12,
+        "name": "amount_payable",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "pay_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "pay_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "cancel_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "cancel_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "accept_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "delivered_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 19,
+        "name": "complete_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 21,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "1b40d00c850d61c3c5f5dc46a3c2fb909d2d0419474458c6e2468e7e9ade5e3f"
+}

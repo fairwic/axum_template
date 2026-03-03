@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, name, address, lat, lng, phone, business_hours, status,\n                   delivery_radius_km, delivery_fee_base, delivery_fee_per_km, runner_service_fee,\n                   created_at, updated_at\n            FROM stores\n            ORDER BY created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "lat",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "lng",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "business_hours",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "delivery_radius_km",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "delivery_fee_base",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "delivery_fee_per_km",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "runner_service_fee",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "79757cce8f4bf3f9753a8e02c5a4a8de0fdae7b948bde90e98e7a57e7933c7f3"
+}

@@ -3,7 +3,7 @@
 use axum_common::AppError;
 use axum_domain::product::entity::{Product, ProductStatus};
 use chrono::{DateTime, Utc};
-use sqlx::types::Json;
+use serde_json::Value;
 use ulid::Ulid;
 
 #[derive(Debug, sqlx::FromRow)]
@@ -14,12 +14,12 @@ pub struct ProductModel {
     pub title: String,
     pub subtitle: Option<String>,
     pub cover_image: String,
-    pub images: Json<Vec<String>>,
+    pub images: Value,
     pub price: i32,
     pub original_price: Option<i32>,
     pub stock: i32,
     pub status: String,
-    pub tags: Json<Vec<String>>,
+    pub tags: Value,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -33,7 +33,7 @@ impl ProductModel {
             title: product.title.clone(),
             subtitle: product.subtitle.clone(),
             cover_image: product.cover_image.clone(),
-            images: Json(product.images.clone()),
+            images: Value::Array(product.images.iter().cloned().map(Value::String).collect()),
             price: product.price,
             original_price: product.original_price,
             stock: product.stock,
@@ -41,7 +41,7 @@ impl ProductModel {
                 ProductStatus::On => "ON".to_string(),
                 ProductStatus::Off => "OFF".to_string(),
             },
-            tags: Json(product.tags.clone()),
+            tags: Value::Array(product.tags.iter().cloned().map(Value::String).collect()),
             created_at: product.created_at,
             updated_at: product.updated_at,
         }
@@ -59,6 +59,10 @@ impl ProductModel {
             "OFF" => ProductStatus::Off,
             _ => return Err(AppError::Internal("invalid product status".into())),
         };
+        let images: Vec<String> = serde_json::from_value(self.images)
+            .map_err(|_| AppError::Internal("invalid images json".into()))?;
+        let tags: Vec<String> = serde_json::from_value(self.tags)
+            .map_err(|_| AppError::Internal("invalid tags json".into()))?;
         Ok(Product {
             id,
             store_id,
@@ -66,12 +70,12 @@ impl ProductModel {
             title: self.title,
             subtitle: self.subtitle,
             cover_image: self.cover_image,
-            images: self.images.0,
+            images,
             price: self.price,
             original_price: self.original_price,
             stock: self.stock,
             status,
-            tags: self.tags.0,
+            tags,
             created_at: self.created_at,
             updated_at: self.updated_at,
         })

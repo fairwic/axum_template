@@ -1,6 +1,6 @@
 //! Product handlers
 
-use axum::{extract::{Query, State}, Json};
+use axum::extract::{Query, State};
 use axum_common::{ApiResponse, AppError, AppResult, PagedResponse};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;

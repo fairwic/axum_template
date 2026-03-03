@@ -3,10 +3,12 @@ use std::sync::Arc;
 
 use axum::{body::{Body, to_bytes}, http::Request};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, CategoryService, ProductService, StoreService, UserService};
+use axum_application::{AdminService, CartService, CategoryService, ProductService, StoreService, UserService};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
+use axum_domain::cart::entity::Cart;
+use axum_domain::cart::repo::CartRepository;
 use axum_domain::category::entity::Category;
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::product::entity::Product;
@@ -131,6 +133,48 @@ impl ProductRepository for InMemoryProductRepo {
 }
 
 #[derive(Default)]
+struct InMemoryCartRepo;
+
+#[async_trait]
+impl CartRepository for InMemoryCartRepo {
+    async fn get_cart(
+        &self,
+        _user_id: ulid::Ulid,
+        _store_id: ulid::Ulid,
+    ) -> AppResult<Option<Cart>> {
+        Ok(None)
+    }
+
+    async fn create_cart(&self, user_id: ulid::Ulid, store_id: ulid::Ulid) -> AppResult<Cart> {
+        Ok(Cart::new(user_id, store_id))
+    }
+
+    async fn upsert_item(
+        &self,
+        _user_id: ulid::Ulid,
+        _store_id: ulid::Ulid,
+        _product_id: ulid::Ulid,
+        _qty: i32,
+        _price_snapshot: i32,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn remove_item(
+        &self,
+        _user_id: ulid::Ulid,
+        _store_id: ulid::Ulid,
+        _product_id: ulid::Ulid,
+    ) -> AppResult<()> {
+        Ok(())
+    }
+
+    async fn clear(&self, _user_id: ulid::Ulid, _store_id: ulid::Ulid) -> AppResult<()> {
+        Ok(())
+    }
+}
+
+#[derive(Default)]
 struct FakeLbs;
 
 #[async_trait]
@@ -153,12 +197,15 @@ fn create_test_app() -> axum::Router {
     let category_service = CategoryService::new(category_repo);
     let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
     let product_service = ProductService::new(product_repo);
+    let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
+    let cart_service = CartService::new(cart_repo);
     let state = AppState::new(
         service,
         admin_service,
         store_service,
         category_service,
         product_service,
+        cart_service,
         "secret".into(),
         3600,
     );

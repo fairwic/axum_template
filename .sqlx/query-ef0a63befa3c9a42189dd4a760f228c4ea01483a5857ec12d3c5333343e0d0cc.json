@@ -1,0 +1,165 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE goods_orders\n            SET\n                status = $2,\n                amount_goods = $3,\n                amount_delivery_fee = $4,\n                amount_discount = $5,\n                amount_payable = $6,\n                distance_km = $7,\n                address_snapshot = $8,\n                store_snapshot = $9,\n                remark = $10,\n                pay_status = $11,\n                pay_time = $12,\n                cancel_reason = $13,\n                cancel_time = $14,\n                accept_time = $15,\n                complete_time = $16,\n                updated_at = $17,\n                items = $18\n            WHERE id = $1\n            RETURNING\n                id, user_id, store_id, delivery_type, status, items,\n                amount_goods, amount_delivery_fee, amount_discount, amount_payable,\n                distance_km, address_snapshot, store_snapshot, remark,\n                pay_status, pay_time, cancel_reason, cancel_time,\n                accept_time, complete_time, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "store_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "delivery_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "items",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 6,
+        "name": "amount_goods",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "amount_delivery_fee",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "amount_discount",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "amount_payable",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "distance_km",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 11,
+        "name": "address_snapshot",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 12,
+        "name": "store_snapshot",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 13,
+        "name": "remark",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "pay_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "pay_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 16,
+        "name": "cancel_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "cancel_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "accept_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 19,
+        "name": "complete_time",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 21,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Jsonb",
+        "Jsonb",
+        "Text",
+        "Varchar",
+        "Timestamptz",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz",
+        "Timestamptz",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "ef0a63befa3c9a42189dd4a760f228c4ea01483a5857ec12d3c5333343e0d0cc"
+}

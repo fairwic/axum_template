@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE products\n            SET stock = stock - $2, updated_at = NOW()\n            WHERE id = $1 AND stock >= $2 AND status = 'ON'\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "89d91829037c961cff3f1753beb720c465872b62369103e67e71aa04b8a52a13"
+}

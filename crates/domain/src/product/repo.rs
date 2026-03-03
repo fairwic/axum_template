@@ -1,7 +1,7 @@
 //! Product repository trait
 
 use crate::product::entity::Product;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use async_trait::async_trait;
 use ulid::Ulid;
 
@@ -24,4 +24,16 @@ pub trait ProductRepository: Send + Sync {
     ) -> AppResult<(Vec<Product>, i64)>;
 
     async fn create(&self, product: &Product) -> AppResult<Product>;
+
+    async fn find_by_ids(&self, _store_id: Ulid, _product_ids: &[Ulid]) -> AppResult<Vec<Product>> {
+        Err(AppError::Internal("find_by_ids not implemented".into()))
+    }
+
+    async fn try_lock_stock(&self, _product_id: Ulid, _qty: i32) -> AppResult<bool> {
+        Err(AppError::Internal("try_lock_stock not implemented".into()))
+    }
+
+    async fn release_stock(&self, _product_id: Ulid, _qty: i32) -> AppResult<()> {
+        Err(AppError::Internal("release_stock not implemented".into()))
+    }
 }

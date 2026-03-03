@@ -135,4 +135,61 @@ impl ProductRepository for PgProductRepository {
 
         row.into_entity()
     }
+
+    async fn find_by_ids(&self, store_id: Ulid, product_ids: &[Ulid]) -> AppResult<Vec<Product>> {
+        if product_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        let ids: Vec<String> = product_ids.iter().map(|item| item.to_string()).collect();
+        let rows = sqlx::query_as!(
+            ProductModel,
+            r#"
+            SELECT id, store_id, category_id, title, subtitle, cover_image, images, price,
+                   original_price, stock, status, tags, created_at, updated_at
+            FROM products
+            WHERE store_id = $1 AND id = ANY($2::varchar[])
+            "#,
+            store_id.to_string(),
+            &ids
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut products = Vec::with_capacity(rows.len());
+        for model in rows {
+            products.push(model.into_entity()?);
+        }
+        Ok(products)
+    }
+
+    async fn try_lock_stock(&self, product_id: Ulid, qty: i32) -> AppResult<bool> {
+        let row = sqlx::query!(
+            r#"
+            UPDATE products
+            SET stock = stock - $2, updated_at = NOW()
+            WHERE id = $1 AND stock >= $2 AND status = 'ON'
+            RETURNING id
+            "#,
+            product_id.to_string(),
+            qty
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.is_some())
+    }
+
+    async fn release_stock(&self, product_id: Ulid, qty: i32) -> AppResult<()> {
+        sqlx::query!(
+            r#"
+            UPDATE products
+            SET stock = stock + $2, updated_at = NOW()
+            WHERE id = $1
+            "#,
+            product_id.to_string(),
+            qty
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
 }
