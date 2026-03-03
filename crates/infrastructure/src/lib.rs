@@ -25,6 +25,7 @@ pub mod postgres {
     pub mod product_repo;
     pub mod runner_order_repo;
     pub mod store_repo;
+    pub mod transaction;
     pub mod user_repo;
 }
 
@@ -41,7 +42,7 @@ pub mod external {
     pub mod wechat_auth_client;
 }
 
-pub use config::AppConfig;
+pub use config::{AppConfig, CacheProvider, LbsProvider, RuntimeConfig};
 pub use external::sms_gateway::LogSmsGateway;
 pub use external::wechat_auth_client::WechatMiniProgramClient;
 pub use memory::cache::MemoryCacheService;
@@ -53,5 +54,6 @@ pub use postgres::goods_order_repo::PgGoodsOrderRepository;
 pub use postgres::product_repo::PgProductRepository;
 pub use postgres::runner_order_repo::PgRunnerOrderRepository;
 pub use postgres::store_repo::PgStoreRepository;
+pub use postgres::transaction::PgTransactionManager;
 pub use postgres::user_repo::PgUserRepository;
 pub use redis::cache::RedisCacheService;

@@ -70,11 +70,13 @@ utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }
 fred = { version = "9", features = ["enable-rustls", "partial-tracing"] }
 
 # Internal Crates
+axum-core-kernel = { path = "crates/core-kernel" }
 axum-common = { path = "crates/common" }
 axum-domain = { path = "crates/domain" }
 axum-application = { path = "crates/application" }
 axum-infrastructure = { path = "crates/infrastructure" }
 axum-api = { path = "crates/api" }
+axum-runtime = { path = "crates/runtime" }
 
 
 [workspace.lints.clippy]

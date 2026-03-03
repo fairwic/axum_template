@@ -2,7 +2,7 @@
 
 use crate::admin::entity::Admin;
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 
 #[async_trait]
 pub trait AdminRepository: Send + Sync {

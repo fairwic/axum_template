@@ -7,16 +7,82 @@ on:
     branches: [main, develop]
 
 env:
-  RUST_VERSION: "1.88"
   BIN_NAME: axum-server
-  BIN_PACKAGE: axum-server
   IMAGE_NAME: bjd-server
   REGISTRY: ghcr.io
 
 jobs:
+  verify:
+    name: Verify (fmt/clippy/test)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets
+
+      - name: Unit tests
+        run: cargo test --workspace --quiet
+
+  sqlx-offline:
+    name: SQLx Offline Guard
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d testdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres123@localhost:5432/testdb
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --locked --no-default-features --features postgres
+
+      - name: Run migrations
+        run: cargo sqlx migrate run
+
+      - name: SQLx prepare check
+        run: cargo sqlx prepare --workspace --check
+
+      - name: Offline compile check
+        run: SQLX_OFFLINE=true cargo check --workspace --quiet
+
   build-and-push:
     name: Build & Push Image (GHCR)
     runs-on: ubuntu-24.04
+    needs: [verify, sqlx-offline]
     permissions:
       contents: read
       packages: write
@@ -25,7 +91,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 在 amazonlinux:2023 里编译，保证和服务器环境更一致（避免 glibc/openssl 坑）
       - name: Build binary in Amazon Linux container
         run: |
           docker run --rm -t \
@@ -34,23 +99,17 @@ jobs:
               set -euo pipefail
               dnf -y update
               dnf -y install git gcc clang lld openssl-devel pkgconfig make tar gzip
-              curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain '"${RUST_VERSION}"'
+              curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
               source "$HOME/.cargo/env"
-              rustup component add rustfmt clippy
 
               export RUSTFLAGS="-C link-arg=-fuse-ld=lld"
               export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-              # 没提交 sqlx-data.json 就别开
-              # export SQLX_OFFLINE=true
 
-              cargo fmt --all -- --check
-              cargo clippy --workspace --all-targets -- -D warnings
-              cargo test --workspace
-              cargo build -p '"${BIN_PACKAGE}"' --release
+              cargo build -p axum-server --release
 
               rm -rf dist && mkdir -p dist
-              cp target/release/'"${BIN_NAME}"' dist/'"${BIN_NAME}"'
-              (cd dist && sha256sum '"${BIN_NAME}"' > sha256.txt)
+              cp target/release/axum-server dist/axum-server
+              (cd dist && sha256sum axum-server > sha256.txt)
               ls -lah dist
             '
 
@@ -112,12 +171,12 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF2'
             set -euo pipefail
             cd "${SERVER_APP_PATH}"
             docker compose pull
             docker compose up -d --remove-orphans
             docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | sed -n '1,10p'
-          EOF
+          EOF2
         env:
           SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}

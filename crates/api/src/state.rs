@@ -4,6 +4,7 @@ use axum_application::{
     AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
     RunnerOrderService, StoreService, UserService,
 };
+use axum_common::{AppError, AppResult};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
@@ -15,6 +16,7 @@ pub struct BizConfig {
     pub runner_banner_text: String,
     pub pay_timeout_secs: u64,
     pub auto_accept_secs: u64,
+    pub cancel_timeout_secs: u64,
 }
 
 impl Default for BizConfig {
@@ -27,6 +29,7 @@ impl Default for BizConfig {
             runner_banner_text: "顺路代取快递".into(),
             pay_timeout_secs: 15 * 60,
             auto_accept_secs: 5 * 60,
+            cancel_timeout_secs: 5 * 60,
         }
     }
 }
@@ -95,5 +98,23 @@ impl AppState {
     pub fn with_biz_config(mut self, biz_config: BizConfig) -> Self {
         self.biz_config = Arc::new(RwLock::new(biz_config));
         self
+    }
+
+    pub fn address_service_ref(&self) -> AppResult<&Arc<AddressService>> {
+        self.address_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("address service not initialized".into()))
+    }
+
+    pub fn order_service_ref(&self) -> AppResult<&Arc<OrderService>> {
+        self.order_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("order service not initialized".into()))
+    }
+
+    pub fn runner_order_service_ref(&self) -> AppResult<&Arc<RunnerOrderService>> {
+        self.runner_order_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("runner order service not initialized".into()))
     }
 }

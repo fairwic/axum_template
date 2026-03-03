@@ -2,7 +2,7 @@
 
 use crate::product::entity::Product;
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::AppResult;
 use ulid::Ulid;
 
 #[async_trait]
@@ -24,23 +24,13 @@ pub trait ProductRepository: Send + Sync {
     ) -> AppResult<(Vec<Product>, i64)>;
 
     async fn create(&self, product: &Product) -> AppResult<Product>;
-    async fn update(&self, _product: &Product) -> AppResult<Product> {
-        Err(AppError::Internal("update not implemented".into()))
-    }
+    async fn update(&self, product: &Product) -> AppResult<Product>;
 
-    async fn find_by_id(&self, _store_id: Ulid, _product_id: Ulid) -> AppResult<Option<Product>> {
-        Ok(None)
-    }
+    async fn find_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Option<Product>>;
 
-    async fn find_by_ids(&self, _store_id: Ulid, _product_ids: &[Ulid]) -> AppResult<Vec<Product>> {
-        Err(AppError::Internal("find_by_ids not implemented".into()))
-    }
+    async fn find_by_ids(&self, store_id: Ulid, product_ids: &[Ulid]) -> AppResult<Vec<Product>>;
 
-    async fn try_lock_stock(&self, _product_id: Ulid, _qty: i32) -> AppResult<bool> {
-        Err(AppError::Internal("try_lock_stock not implemented".into()))
-    }
+    async fn try_lock_stock(&self, product_id: Ulid, qty: i32) -> AppResult<bool>;
 
-    async fn release_stock(&self, _product_id: Ulid, _qty: i32) -> AppResult<()> {
-        Err(AppError::Internal("release_stock not implemented".into()))
-    }
+    async fn release_stock(&self, product_id: Ulid, qty: i32) -> AppResult<()>;
 }

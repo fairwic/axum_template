@@ -7,16 +7,12 @@ use axum::{
 use axum_application::{CreateStoreInput, StoreService, UpdateStoreInput};
 use axum_common::{ApiResponse, AppError, AppResult};
 use axum_domain::store::entity::{Store, StoreStatus};
-use ulid::Ulid;
 
 use crate::dtos::store_dto::{
     AdminCreateStoreRequest, AdminUpdateStoreRequest, StoreAdminResponse,
 };
+use crate::extractors::parse_ulid;
 use crate::state::AppState;
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
 
 fn parse_store_status(value: &str) -> AppResult<StoreStatus> {
     match value {

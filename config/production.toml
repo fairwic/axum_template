@@ -11,3 +11,7 @@ max_connections = 10
 
 [cache]
 default_ttl_secs = 300
+
+[runtime]
+cache_provider = "redis"
+lbs_provider = "noop"

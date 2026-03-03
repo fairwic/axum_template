@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
     extract::State,
-    http::{header::AUTHORIZATION, HeaderValue, Request},
+    http::{header::AUTHORIZATION, Request},
     middleware::Next,
     response::Response,
 };
@@ -9,8 +9,6 @@ use axum_common::{AppError, AppResult};
 
 use crate::auth::jwt::{decode_token, Claims};
 use crate::state::AppState;
-
-const USER_ID_HEADER: &str = "x-user-id";
 
 fn parse_bearer_token(request: &Request<Body>) -> AppResult<&str> {
     let auth_header = request
@@ -35,9 +33,6 @@ pub async fn require_user_auth(
     if claims.role != "USER" {
         return Err(AppError::Forbidden);
     }
-
-    let sub_value = HeaderValue::from_str(&claims.sub).map_err(|_| AppError::Unauthorized)?;
-    request.headers_mut().insert(USER_ID_HEADER, sub_value);
     request.extensions_mut().insert(claims);
 
     Ok(next.run(request).await)

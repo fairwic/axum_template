@@ -1,11 +1,10 @@
 //! API Router Configuration
 
 use axum::{middleware, routing::get, Json, Router};
-use utoipa::OpenApi;
 
 use crate::auth::middleware::{require_admin_auth, require_user_auth};
 use crate::handlers::health_handler;
-use crate::openapi::ApiDoc;
+use crate::openapi::openapi;
 use crate::routes::{
     address, admin_auth, admin_category, admin_config, admin_order, admin_product,
     admin_runner_order, admin_store, auth, cart, category, config, member, order, product,
@@ -51,10 +50,8 @@ pub fn create_router(state: AppState) -> Router {
         .merge(admin_public_routes)
         .merge(admin_protected_routes);
 
-    let openapi_route = Router::<AppState>::new().route(
-        "/api-docs/openapi.json",
-        get(|| async { Json(ApiDoc::openapi()) }),
-    );
+    let openapi_route = Router::<AppState>::new()
+        .route("/api-docs/openapi.json", get(|| async { Json(openapi()) }));
 
     let swagger_ui_route = Router::<AppState>::new().route(
         "/swagger-ui",

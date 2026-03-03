@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE stores\n            SET name = $2,\n                address = $3,\n                lat = $4,\n                lng = $5,\n                phone = $6,\n                business_hours = $7,\n                status = $8,\n                delivery_radius_km = $9,\n                delivery_fee_base = $10,\n                delivery_fee_per_km = $11,\n                runner_service_fee = $12,\n                updated_at = $13\n            WHERE id = $1\n            RETURNING id, name, address, lat, lng, phone, business_hours, status,\n                      delivery_radius_km, delivery_fee_base, delivery_fee_per_km, runner_service_fee,\n                      created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "lat",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 4,
+        "name": "lng",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 5,
+        "name": "phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "business_hours",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "delivery_radius_km",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 9,
+        "name": "delivery_fee_base",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "delivery_fee_per_km",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "runner_service_fee",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Float8",
+        "Float8",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Float8",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c910b75bc017ec32cc78529f326b78079de7905dd8b17920af6be57d6030e2df"
+}

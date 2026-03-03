@@ -12,7 +12,8 @@ export DATABASE_URL=postgres://postgres:postgres123@localhost:5432/testdb
 cargo sqlx migrate run
 ```
 4. 生成离线元数据：`cargo sqlx prepare --workspace`
-5. 启动服务：`cargo run -p axum-server`
+5. 启动 API 服务：`cargo run -p axum-server`
+6. 启动 Worker 进程（新终端）：`cargo run -p axum-worker`
 
 **访问入口**
 Swagger UI：`http://localhost:3000/swagger-ui`
@@ -21,6 +22,11 @@ Health：`http://localhost:3000/health`
 **SQLX_OFFLINE 固定流程**
 `.sqlx/` 必须提交到仓库，CI 默认使用离线模式。
 当 SQL 有变更时，必须重新执行：`cargo sqlx prepare --workspace`。
+提交前建议执行：
+```
+cargo sqlx prepare --workspace --check
+SQLX_OFFLINE=true cargo check --workspace
+```
 无数据库环境编译示例：
 ```
 export SQLX_OFFLINE=true
@@ -37,7 +43,7 @@ cargo build
 
 **常见问题与修复**
 1. 提示 `DATABASE_URL` 未设置：先 `export DATABASE_URL=...`。
-2. 提示 `no cached data for this query`：执行 `cargo sqlx prepare --workspace`。
+2. 提示 `no cached data for this query`：执行 `cargo sqlx migrate run && cargo sqlx prepare --workspace`。
 3. 连接失败：确认 Postgres/Redis 已启动并监听对应端口。
 
 **健康与可观测性建议**

@@ -17,6 +17,10 @@ max_connections = 10
 [cache]
 default_ttl_secs = 300
 
+[runtime]
+cache_provider = "memory"
+lbs_provider = "noop"
+
 [auth]
 jwt_secret = "dev-secret"
 jwt_ttl_secs = 604800

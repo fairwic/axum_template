@@ -2,6 +2,7 @@
 
 pub mod auth;
 pub mod dtos;
+pub mod extractors;
 pub mod handlers;
 pub mod openapi;
 pub mod router;

@@ -2,11 +2,9 @@
 
 use axum::{
     extract::{Query, State},
-    http::HeaderMap,
     Json,
 };
 use axum_common::{ApiResponse, AppError, AppResult};
-use ulid::Ulid;
 
 use axum_domain::Cart;
 
@@ -14,22 +12,8 @@ use crate::dtos::cart_dto::{
     AddItemRequest, CartItemResponse, CartQuery, CartResponse, ClearCartRequest, RemoveItemRequest,
     UpdateQtyRequest,
 };
+use crate::extractors::{parse_ulid, AuthUser};
 use crate::state::AppState;
-
-const USER_ID_HEADER: &str = "x-user-id";
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
-
-fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
-    let value = headers
-        .get(USER_ID_HEADER)
-        .ok_or_else(|| AppError::Validation("missing x-user-id".into()))?
-        .to_str()
-        .map_err(|_| AppError::Validation("invalid x-user-id".into()))?;
-    parse_ulid(value, "user_id")
-}
 
 fn ensure_positive_qty(qty: i32) -> AppResult<()> {
     if qty <= 0 {
@@ -65,9 +49,9 @@ fn to_response(cart: Cart) -> CartResponse {
 pub async fn get_cart(
     State(state): State<AppState>,
     Query(query): Query<CartQuery>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
 ) -> AppResult<ApiResponse<CartResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&query.store_id, "store_id")?;
     let cart = state.cart_service.get_cart(user_id, store_id).await?;
     Ok(ApiResponse::success(to_response(cart)))
@@ -83,10 +67,10 @@ pub async fn get_cart(
 /// 接口功能：add_item，添加商品到购物车
 pub async fn add_item(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<AddItemRequest>,
 ) -> AppResult<ApiResponse<CartResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
     ensure_positive_qty(payload.qty)?;
@@ -115,10 +99,10 @@ pub async fn add_item(
 /// 接口功能：update_qty，更新购物车商品数量
 pub async fn update_qty(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<UpdateQtyRequest>,
 ) -> AppResult<ApiResponse<CartResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
     ensure_positive_qty(payload.qty)?;
@@ -154,10 +138,10 @@ pub async fn update_qty(
 /// 接口功能：remove_item，从购物车移除商品
 pub async fn remove_item(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<RemoveItemRequest>,
 ) -> AppResult<ApiResponse<CartResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
 
@@ -179,10 +163,10 @@ pub async fn remove_item(
 /// 接口功能：clear_cart，清空指定门店购物车
 pub async fn clear_cart(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<ClearCartRequest>,
 ) -> AppResult<ApiResponse<CartResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
 
     state.cart_service.clear(user_id, store_id).await?;

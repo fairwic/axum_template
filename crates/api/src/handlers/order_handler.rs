@@ -2,7 +2,6 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::HeaderMap,
     Json,
 };
 use axum_application::{CreateGoodsOrderInput, OrderPreview, OrderService};
@@ -16,22 +15,8 @@ use crate::dtos::order_dto::{
     CancelOrderRequest, CreateOrderRequest, ListOrdersQuery, OrderItemRequest, OrderItemResponse,
     OrderPreviewResponse, OrderResponse, PayOrderRequest, PreviewOrderRequest,
 };
+use crate::extractors::{parse_ulid, AuthUser};
 use crate::state::AppState;
-
-const USER_ID_HEADER: &str = "x-user-id";
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
-
-fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
-    let value = headers
-        .get(USER_ID_HEADER)
-        .ok_or_else(|| AppError::Validation("missing x-user-id".into()))?
-        .to_str()
-        .map_err(|_| AppError::Validation("invalid x-user-id".into()))?;
-    parse_ulid(value, "user_id")
-}
 
 fn parse_delivery_type(value: &str) -> AppResult<DeliveryType> {
     match value {
@@ -146,12 +131,7 @@ fn preview_to_response(preview: OrderPreview) -> OrderPreviewResponse {
 }
 
 fn get_service(state: &AppState) -> AppResult<OrderService> {
-    state
-        .order_service
-        .as_ref()
-        .cloned()
-        .map(|item| (*item).clone())
-        .ok_or_else(|| AppError::Internal("order service not initialized".into()))
+    Ok((**state.order_service_ref()?).clone())
 }
 
 #[utoipa::path(
@@ -187,23 +167,18 @@ pub async fn preview_order(
 /// 接口功能：create_order，提交并创建商品订单
 pub async fn create_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<CreateOrderRequest>,
 ) -> AppResult<ApiResponse<OrderResponse>> {
     let payload = payload;
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let delivery_type = parse_delivery_type(&payload.delivery_type)?;
     let service = get_service(&state)?;
     let mut address_snapshot = payload.address_snapshot.clone();
 
     if delivery_type == DeliveryType::Delivery && address_snapshot.is_none() {
-        let address_service = state
-            .address_service
-            .as_ref()
-            .cloned()
-            .map(|item| (*item).clone())
-            .ok_or_else(|| AppError::Internal("address service not initialized".into()))?;
+        let address_service = (**state.address_service_ref()?).clone();
         let address_id = payload
             .address_id
             .as_ref()
@@ -235,10 +210,10 @@ pub async fn create_order(
 /// 接口功能：pay_order，发起商品订单支付
 pub async fn pay_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<PayOrderRequest>,
 ) -> AppResult<ApiResponse<OrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let order_id = parse_ulid(&payload.order_id, "order_id")?;
     let order = get_service(&state)?.pay(user_id, order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -254,10 +229,10 @@ pub async fn pay_order(
 /// 接口功能：list_orders，查询当前用户商品订单列表
 pub async fn list_orders(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Query(query): Query<ListOrdersQuery>,
 ) -> AppResult<ApiResponse<Vec<OrderResponse>>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let service = get_service(&state)?;
     let mut orders = service.list_by_user(user_id).await?;
     if let Some(status) = query.status {
@@ -278,10 +253,10 @@ pub async fn list_orders(
 /// 接口功能：get_order，获取商品订单详情
 pub async fn get_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Path(order_id): Path<String>,
 ) -> AppResult<ApiResponse<OrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.get_by_user(user_id, order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -298,14 +273,15 @@ pub async fn get_order(
 /// 接口功能：cancel_order，取消商品订单
 pub async fn cancel_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Path(order_id): Path<String>,
     Json(payload): Json<CancelOrderRequest>,
 ) -> AppResult<ApiResponse<OrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
+    let cancel_timeout_secs = state.biz_config.read().await.cancel_timeout_secs;
     let order = get_service(&state)?
-        .cancel(user_id, order_id, payload.reason)
+        .cancel(user_id, order_id, payload.reason, cancel_timeout_secs)
         .await?;
     Ok(ApiResponse::success(to_response(order)))
 }
@@ -320,10 +296,10 @@ pub async fn cancel_order(
 /// 接口功能：repurchase_order，基于历史订单再次下单
 pub async fn repurchase_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Path(order_id): Path<String>,
 ) -> AppResult<ApiResponse<OrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.repurchase(user_id, order_id).await?;
     Ok(ApiResponse::success(to_response(order)))

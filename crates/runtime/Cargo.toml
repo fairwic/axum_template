@@ -1,0 +1,16 @@
+[package]
+name = "axum-runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum-common.workspace = true
+axum-domain.workspace = true
+axum-application.workspace = true
+axum-infrastructure.workspace = true
+axum-api.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+async-trait.workspace = true

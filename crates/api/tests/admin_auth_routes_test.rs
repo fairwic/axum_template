@@ -44,6 +44,53 @@ impl UserRepository for InMemoryUserRepo {
         guard.insert(user.openid.clone(), user.clone());
         Ok(user.clone())
     }
+
+    async fn find_by_id(&self, user_id: ulid::Ulid) -> AppResult<Option<User>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.values().find(|item| item.id == user_id).cloned())
+    }
+
+    async fn find_by_phone(&self, phone: &str) -> AppResult<Option<User>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .values()
+            .find(|item| item.phone.as_deref() == Some(phone))
+            .cloned())
+    }
+
+    async fn set_current_store(
+        &self,
+        user_id: ulid::Ulid,
+        store_id: ulid::Ulid,
+    ) -> AppResult<User> {
+        let mut guard = self.inner.lock().await;
+        let key = guard
+            .iter()
+            .find_map(|(openid, user)| (user.id == user_id).then(|| openid.clone()));
+        let Some(key) = key else {
+            return Err(axum_common::AppError::NotFound("user not found".into()));
+        };
+        let user = guard
+            .get_mut(&key)
+            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+        user.current_store_id = Some(store_id);
+        Ok(user.clone())
+    }
+
+    async fn bind_phone(&self, user_id: ulid::Ulid, phone: String) -> AppResult<User> {
+        let mut guard = self.inner.lock().await;
+        let key = guard
+            .iter()
+            .find_map(|(openid, user)| (user.id == user_id).then(|| openid.clone()));
+        let Some(key) = key else {
+            return Err(axum_common::AppError::NotFound("user not found".into()));
+        };
+        let user = guard
+            .get_mut(&key)
+            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+        user.phone = Some(phone);
+        Ok(user.clone())
+    }
 }
 
 #[derive(Default)]
@@ -82,6 +129,17 @@ impl StoreRepository for InMemoryStoreRepo {
         guard.insert(store.id.to_string(), store.clone());
         Ok(store.clone())
     }
+
+    async fn update(&self, store: &Store) -> AppResult<Store> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(store.id.to_string(), store.clone());
+        Ok(store.clone())
+    }
+
+    async fn find_by_id(&self, store_id: ulid::Ulid) -> AppResult<Option<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&store_id.to_string()).cloned())
+    }
 }
 
 #[derive(Default)]
@@ -101,6 +159,17 @@ impl CategoryRepository for InMemoryCategoryRepo {
     }
 
     async fn create(&self, category: &Category) -> AppResult<Category> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(category.id.to_string(), category.clone());
+        Ok(category.clone())
+    }
+
+    async fn find_by_id(&self, category_id: ulid::Ulid) -> AppResult<Option<Category>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&category_id.to_string()).cloned())
+    }
+
+    async fn update(&self, category: &Category) -> AppResult<Category> {
         let mut guard = self.inner.lock().await;
         guard.insert(category.id.to_string(), category.clone());
         Ok(category.clone())
@@ -134,6 +203,34 @@ impl ProductRepository for InMemoryProductRepo {
 
     async fn create(&self, product: &Product) -> AppResult<Product> {
         Ok(product.clone())
+    }
+
+    async fn update(&self, product: &Product) -> AppResult<Product> {
+        Ok(product.clone())
+    }
+
+    async fn find_by_id(
+        &self,
+        _store_id: ulid::Ulid,
+        _product_id: ulid::Ulid,
+    ) -> AppResult<Option<Product>> {
+        Ok(None)
+    }
+
+    async fn find_by_ids(
+        &self,
+        _store_id: ulid::Ulid,
+        _product_ids: &[ulid::Ulid],
+    ) -> AppResult<Vec<Product>> {
+        Ok(vec![])
+    }
+
+    async fn try_lock_stock(&self, _product_id: ulid::Ulid, _qty: i32) -> AppResult<bool> {
+        Ok(false)
+    }
+
+    async fn release_stock(&self, _product_id: ulid::Ulid, _qty: i32) -> AppResult<()> {
+        Ok(())
     }
 }
 

@@ -27,6 +27,17 @@ impl StoreRepository for InMemoryStoreRepo {
         guard.insert(store.id, store.clone());
         Ok(store.clone())
     }
+
+    async fn update(&self, store: &Store) -> AppResult<Store> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(store.id, store.clone());
+        Ok(store.clone())
+    }
+
+    async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&store_id).cloned())
+    }
 }
 
 #[derive(Default)]

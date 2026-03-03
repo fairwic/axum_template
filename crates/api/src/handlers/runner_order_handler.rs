@@ -2,11 +2,10 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::HeaderMap,
     Json,
 };
 use axum_application::{CreateRunnerOrderInput, RunnerOrderService};
-use axum_common::{ApiResponse, AppError, AppResult};
+use axum_common::{ApiResponse, AppResult};
 use axum_domain::order::entity::PayStatus;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 use ulid::Ulid;
@@ -15,22 +14,8 @@ use crate::dtos::runner_order_dto::{
     CancelRunnerOrderRequest, CreateRunnerOrderRequest, ListRunnerOrdersQuery,
     PayRunnerOrderRequest, RunnerOrderResponse,
 };
+use crate::extractors::{parse_ulid, AuthUser};
 use crate::state::AppState;
-
-const USER_ID_HEADER: &str = "x-user-id";
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
-
-fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
-    let value = headers
-        .get(USER_ID_HEADER)
-        .ok_or_else(|| AppError::Validation("missing x-user-id".into()))?
-        .to_str()
-        .map_err(|_| AppError::Validation("invalid x-user-id".into()))?;
-    parse_ulid(value, "user_id")
-}
 
 /// API DTO -> Application Input 映射
 fn map_create_runner_order_input(
@@ -90,12 +75,7 @@ fn to_response(order: RunnerOrder) -> RunnerOrderResponse {
 }
 
 fn get_service(state: &AppState) -> AppResult<RunnerOrderService> {
-    state
-        .runner_order_service
-        .as_ref()
-        .cloned()
-        .map(|item| (*item).clone())
-        .ok_or_else(|| AppError::Internal("runner order service not initialized".into()))
+    Ok((**state.runner_order_service_ref()?).clone())
 }
 
 #[utoipa::path(
@@ -108,10 +88,10 @@ fn get_service(state: &AppState) -> AppResult<RunnerOrderService> {
 /// 接口功能：create_runner_order，提交并创建跑腿订单
 pub async fn create_runner_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<CreateRunnerOrderRequest>,
 ) -> AppResult<ApiResponse<RunnerOrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let input = map_create_runner_order_input(payload, user_id)?;
     let order = get_service(&state)?.create(input).await?;
 
@@ -128,10 +108,10 @@ pub async fn create_runner_order(
 /// 接口功能：pay_runner_order，发起跑腿订单支付
 pub async fn pay_runner_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<PayRunnerOrderRequest>,
 ) -> AppResult<ApiResponse<RunnerOrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&payload.runner_order_id, "runner_order_id")?;
     let order = get_service(&state)?.pay(user_id, runner_order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -147,10 +127,10 @@ pub async fn pay_runner_order(
 /// 接口功能：list_runner_orders，查询当前用户跑腿订单列表
 pub async fn list_runner_orders(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Query(query): Query<ListRunnerOrdersQuery>,
 ) -> AppResult<ApiResponse<Vec<RunnerOrderResponse>>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let mut orders = get_service(&state)?.list_by_user(user_id).await?;
     if let Some(status) = query.status {
         orders.retain(|item| status_to_string(&item.status) == status);
@@ -170,10 +150,10 @@ pub async fn list_runner_orders(
 /// 接口功能：get_runner_order，获取跑腿订单详情
 pub async fn get_runner_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Path(runner_order_id): Path<String>,
 ) -> AppResult<ApiResponse<RunnerOrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&runner_order_id, "runner_order_id")?;
     let order = get_service(&state)?
         .get_by_user(user_id, runner_order_id)
@@ -192,14 +172,20 @@ pub async fn get_runner_order(
 /// 接口功能：cancel_runner_order，取消跑腿订单
 pub async fn cancel_runner_order(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Path(runner_order_id): Path<String>,
     Json(payload): Json<CancelRunnerOrderRequest>,
 ) -> AppResult<ApiResponse<RunnerOrderResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&runner_order_id, "runner_order_id")?;
+    let cancel_timeout_secs = state.biz_config.read().await.cancel_timeout_secs;
     let order = get_service(&state)?
-        .cancel(user_id, runner_order_id, payload.reason)
+        .cancel(
+            user_id,
+            runner_order_id,
+            payload.reason,
+            cancel_timeout_secs,
+        )
         .await?;
     Ok(ApiResponse::success(to_response(order)))
 }

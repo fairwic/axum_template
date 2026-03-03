@@ -2,24 +2,15 @@
 
 use axum::extract::{Path, Query, State};
 use axum_application::RunnerOrderService;
-use axum_common::{ApiResponse, AppError, AppResult};
-use ulid::Ulid;
+use axum_common::{ApiResponse, AppResult};
 
 use crate::dtos::admin_runner_order_dto::AdminListRunnerOrdersQuery;
 use crate::dtos::runner_order_dto::RunnerOrderResponse;
+use crate::extractors::parse_ulid;
 use crate::state::AppState;
 
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
-
 fn get_service(state: &AppState) -> AppResult<RunnerOrderService> {
-    state
-        .runner_order_service
-        .as_ref()
-        .cloned()
-        .map(|item| (*item).clone())
-        .ok_or_else(|| AppError::Internal("runner order service not initialized".into()))
+    Ok((**state.runner_order_service_ref()?).clone())
 }
 
 fn to_response(order: axum_domain::RunnerOrder) -> RunnerOrderResponse {

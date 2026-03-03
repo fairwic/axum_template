@@ -2,31 +2,15 @@
 
 use axum::{
     extract::{Query, State},
-    http::HeaderMap,
     Json,
 };
 use axum_common::{ApiResponse, AppError, AppResult};
-use ulid::Ulid;
 
 use axum_domain::store::entity::{Store, StoreStatus};
 
 use crate::dtos::store_dto::{NearbyQuery, SelectStoreRequest, StoreNearbyResponse, StoreResponse};
+use crate::extractors::{parse_ulid, AuthUser};
 use crate::state::AppState;
-
-const USER_ID_HEADER: &str = "x-user-id";
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
-
-fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
-    let value = headers
-        .get(USER_ID_HEADER)
-        .ok_or_else(|| AppError::Validation("missing x-user-id".into()))?
-        .to_str()
-        .map_err(|_| AppError::Validation("invalid x-user-id".into()))?;
-    parse_ulid(value, "user_id")
-}
 
 fn status_to_string(status: &StoreStatus) -> String {
     match status {
@@ -106,10 +90,10 @@ pub async fn nearby_stores(
 /// 接口功能：select_store，选择并保存当前门店
 pub async fn select_store(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
     Json(payload): Json<SelectStoreRequest>,
 ) -> AppResult<ApiResponse<StoreResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
 
     state.user_service.get_by_id(user_id).await?;
@@ -131,9 +115,9 @@ pub async fn select_store(
 /// 接口功能：current_store，获取用户当前已选择门店
 pub async fn current_store(
     State(state): State<AppState>,
-    headers: HeaderMap,
+    auth_user: AuthUser,
 ) -> AppResult<ApiResponse<StoreResponse>> {
-    let user_id = parse_user_id(&headers)?;
+    let user_id = auth_user.user_id;
     let user = state.user_service.get_by_id(user_id).await?;
     let store_id = user
         .current_store_id

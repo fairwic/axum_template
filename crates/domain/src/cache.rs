@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 
 #[async_trait]
 pub trait CacheService: Send + Sync {

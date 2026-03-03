@@ -7,16 +7,12 @@ use axum::{
 use axum_application::{CreateProductInput, ProductService, UpdateProductInput};
 use axum_common::{ApiResponse, AppError, AppResult};
 use axum_domain::product::entity::{Product, ProductStatus};
-use ulid::Ulid;
 
 use crate::dtos::product_dto::{
     AdminCreateProductRequest, AdminUpdateProductRequest, ProductResponse,
 };
+use crate::extractors::parse_ulid;
 use crate::state::AppState;
-
-fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
-}
 
 fn parse_product_status(value: &str) -> AppResult<ProductStatus> {
     match value {

@@ -13,6 +13,7 @@ pub mod order;
 pub mod product;
 pub mod runner_order;
 pub mod store;
+pub mod transaction;
 pub mod user;
 
 pub use address::entity::Address;
@@ -34,5 +35,6 @@ pub use runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 pub use runner_order::repo::RunnerOrderRepository;
 pub use store::entity::{Store, StoreStatus};
 pub use store::repo::StoreRepository;
+pub use transaction::{OrderUnitOfWork, TransactionManager};
 pub use user::entity::User;
 pub use user::repo::UserRepository;

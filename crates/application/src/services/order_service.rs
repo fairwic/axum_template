@@ -10,6 +10,7 @@ use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::ProductStatus;
 use axum_domain::product::repo::ProductRepository;
 use axum_domain::store::repo::StoreRepository;
+use axum_domain::transaction::TransactionManager;
 use chrono::{Duration, Utc};
 use ulid::Ulid;
 
@@ -18,6 +19,7 @@ pub struct OrderService {
     repo: Arc<dyn GoodsOrderRepository>,
     product_repo: Arc<dyn ProductRepository>,
     store_repo: Arc<dyn StoreRepository>,
+    tx_manager: Option<Arc<dyn TransactionManager>>,
 }
 
 impl OrderService {
@@ -30,7 +32,13 @@ impl OrderService {
             repo,
             product_repo,
             store_repo,
+            tx_manager: None,
         }
+    }
+
+    pub fn with_transaction_manager(mut self, tx_manager: Arc<dyn TransactionManager>) -> Self {
+        self.tx_manager = Some(tx_manager);
+        self
     }
 
     pub async fn create(&self, input: CreateGoodsOrderInput) -> AppResult<GoodsOrder> {
@@ -43,18 +51,6 @@ impl OrderService {
                 input.distance_km,
             )
             .await?;
-        let mut locked_items: Vec<(Ulid, i32)> = Vec::with_capacity(checked_items.len());
-        for item in &checked_items {
-            let locked = self
-                .product_repo
-                .try_lock_stock(item.product_id, item.qty)
-                .await?;
-            if !locked {
-                self.rollback_locked_items(&locked_items).await;
-                return Err(AppError::Validation("库存变化，请调整后再试".into()));
-            }
-            locked_items.push((item.product_id, item.qty));
-        }
 
         let order = GoodsOrder::new(
             input.user_id,
@@ -67,13 +63,109 @@ impl OrderService {
             input.store_snapshot,
             input.remark,
         )?;
-        match self.repo.create(&order).await {
+
+        if let Some(tx_manager) = &self.tx_manager {
+            return self.create_in_transaction(tx_manager, &order).await;
+        }
+
+        self.create_without_transaction(&order).await
+    }
+
+    async fn create_without_transaction(&self, order: &GoodsOrder) -> AppResult<GoodsOrder> {
+        let mut locked_items: Vec<(Ulid, i32)> = Vec::with_capacity(order.items.len());
+        for item in &order.items {
+            let locked = self
+                .product_repo
+                .try_lock_stock(item.product_id, item.qty)
+                .await?;
+            if !locked {
+                self.rollback_locked_items(&locked_items).await;
+                return Err(AppError::Validation("库存变化，请调整后再试".into()));
+            }
+            locked_items.push((item.product_id, item.qty));
+        }
+
+        match self.repo.create(order).await {
             Ok(saved) => Ok(saved),
             Err(err) => {
                 self.rollback_locked_items(&locked_items).await;
                 Err(err)
             }
         }
+    }
+
+    async fn create_in_transaction(
+        &self,
+        tx_manager: &Arc<dyn TransactionManager>,
+        order: &GoodsOrder,
+    ) -> AppResult<GoodsOrder> {
+        let mut uow = tx_manager.begin_order_uow().await?;
+
+        for item in &order.items {
+            let locked = uow
+                .try_lock_product_stock(item.product_id, item.qty)
+                .await?;
+            if !locked {
+                let _ = uow.rollback().await;
+                return Err(AppError::Validation("库存变化，请调整后再试".into()));
+            }
+        }
+
+        let saved = match uow.create_goods_order(order).await {
+            Ok(saved) => saved,
+            Err(err) => {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        };
+
+        uow.commit().await?;
+        Ok(saved)
+    }
+
+    async fn update_in_transaction(
+        &self,
+        tx_manager: &Arc<dyn TransactionManager>,
+        order: &GoodsOrder,
+    ) -> AppResult<GoodsOrder> {
+        let mut uow = tx_manager.begin_order_uow().await?;
+
+        let updated = match uow.update_goods_order(order).await {
+            Ok(updated) => updated,
+            Err(err) => {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        };
+
+        uow.commit().await?;
+        Ok(updated)
+    }
+
+    async fn update_and_release_stock_in_transaction(
+        &self,
+        tx_manager: &Arc<dyn TransactionManager>,
+        order: &GoodsOrder,
+    ) -> AppResult<GoodsOrder> {
+        let mut uow = tx_manager.begin_order_uow().await?;
+
+        let updated = match uow.update_goods_order(order).await {
+            Ok(updated) => updated,
+            Err(err) => {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        };
+
+        for item in &updated.items {
+            if let Err(err) = uow.release_product_stock(item.product_id, item.qty).await {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        }
+
+        uow.commit().await?;
+        Ok(updated)
     }
 
     pub async fn pay(&self, user_id: Ulid, order_id: Ulid) -> AppResult<GoodsOrder> {
@@ -99,9 +191,18 @@ impl OrderService {
         user_id: Ulid,
         order_id: Ulid,
         reason: Option<String>,
+        cancel_timeout_secs: u64,
     ) -> AppResult<GoodsOrder> {
         let mut order = self.must_get_for_user(user_id, order_id).await?;
+        ensure_cancel_within_window(order.created_at, order.pay_time, cancel_timeout_secs)?;
         order.cancel(reason)?;
+
+        if let Some(tx_manager) = &self.tx_manager {
+            return self
+                .update_and_release_stock_in_transaction(tx_manager, &order)
+                .await;
+        }
+
         let updated = self.repo.update(&order).await?;
         for item in &updated.items {
             self.product_repo
@@ -193,11 +294,16 @@ impl OrderService {
                 }
 
                 order.close_unpaid_timeout()?;
-                let updated = self.repo.update(&order).await?;
-                for item in &updated.items {
-                    self.product_repo
-                        .release_stock(item.product_id, item.qty)
+                if let Some(tx_manager) = &self.tx_manager {
+                    self.update_and_release_stock_in_transaction(tx_manager, &order)
                         .await?;
+                } else {
+                    let updated = self.repo.update(&order).await?;
+                    for item in &updated.items {
+                        self.product_repo
+                            .release_stock(item.product_id, item.qty)
+                            .await?;
+                    }
                 }
                 affected += 1;
             }
@@ -222,7 +328,11 @@ impl OrderService {
                 }
 
                 order.admin_accept()?;
-                self.repo.update(&order).await?;
+                if let Some(tx_manager) = &self.tx_manager {
+                    self.update_in_transaction(tx_manager, &order).await?;
+                } else {
+                    self.repo.update(&order).await?;
+                }
                 affected += 1;
             }
         }
@@ -357,4 +467,21 @@ impl OrderService {
         let extra_km = (distance_km - store.delivery_radius_km).ceil() as i32;
         Ok(store.delivery_fee_base + extra_km * store.delivery_fee_per_km)
     }
+}
+
+fn ensure_cancel_within_window(
+    created_at: chrono::DateTime<Utc>,
+    pay_time: Option<chrono::DateTime<Utc>>,
+    cancel_timeout_secs: u64,
+) -> AppResult<()> {
+    if cancel_timeout_secs == 0 {
+        return Err(AppError::Validation("已超过可取消时间".into()));
+    }
+
+    let base = pay_time.unwrap_or(created_at);
+    let elapsed = Utc::now().signed_duration_since(base).num_seconds();
+    if elapsed >= cancel_timeout_secs as i64 {
+        return Err(AppError::Validation("已超过可取消时间".into()));
+    }
+    Ok(())
 }

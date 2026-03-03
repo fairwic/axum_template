@@ -18,6 +18,8 @@ pub struct ConfigResponse {
     pub pay_timeout_secs: u64,
     /// 参数：auto_accept_secs，待接单自动接单秒数
     pub auto_accept_secs: u64,
+    /// 参数：cancel_timeout_secs，可取消时间窗秒数
+    pub cancel_timeout_secs: u64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -37,4 +39,6 @@ pub struct UpdateConfigRequest {
     pub pay_timeout_secs: u64,
     /// 参数：auto_accept_secs，待接单自动接单秒数
     pub auto_accept_secs: u64,
+    /// 参数：cancel_timeout_secs，可取消时间窗秒数
+    pub cancel_timeout_secs: u64,
 }

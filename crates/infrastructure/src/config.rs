@@ -9,6 +9,8 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub redis: RedisConfig,
     pub cache: CacheConfig,
+    #[serde(default)]
+    pub runtime: RuntimeConfig,
     pub auth: AuthConfig,
     #[serde(default)]
     pub wechat: WechatConfig,
@@ -48,6 +50,29 @@ pub struct RedisConfig {
 pub struct CacheConfig {
     #[serde(default = "default_cache_ttl_secs")]
     pub default_ttl_secs: u64,
+}
+
+#[derive(Debug, Deserialize, Clone, Copy, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CacheProvider {
+    #[default]
+    Memory,
+    Redis,
+}
+
+#[derive(Debug, Deserialize, Clone, Copy, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum LbsProvider {
+    #[default]
+    Noop,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct RuntimeConfig {
+    #[serde(default)]
+    pub cache_provider: CacheProvider,
+    #[serde(default)]
+    pub lbs_provider: LbsProvider,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -146,7 +171,6 @@ impl AppConfig {
                     .prefix_separator("__")
                     .separator("__"),
             )
-            .add_source(Environment::default().try_parsing(true))
             .build()?;
 
         config.try_deserialize()

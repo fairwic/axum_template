@@ -7,6 +7,7 @@ use axum_common::{AppError, AppResult};
 use axum_domain::runner_order::entity::RunnerOrder;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
 use axum_domain::store::repo::StoreRepository;
+use axum_domain::transaction::TransactionManager;
 use chrono::{Duration, Utc};
 use ulid::Ulid;
 
@@ -18,11 +19,55 @@ const RUNNER_FREE_DISTANCE_KM: f64 = 3.0;
 pub struct RunnerOrderService {
     repo: Arc<dyn RunnerOrderRepository>,
     store_repo: Arc<dyn StoreRepository>,
+    tx_manager: Option<Arc<dyn TransactionManager>>,
 }
 
 impl RunnerOrderService {
     pub fn new(repo: Arc<dyn RunnerOrderRepository>, store_repo: Arc<dyn StoreRepository>) -> Self {
-        Self { repo, store_repo }
+        Self {
+            repo,
+            store_repo,
+            tx_manager: None,
+        }
+    }
+
+    pub fn with_transaction_manager(mut self, tx_manager: Arc<dyn TransactionManager>) -> Self {
+        self.tx_manager = Some(tx_manager);
+        self
+    }
+
+    async fn create_in_transaction(
+        &self,
+        tx_manager: &Arc<dyn TransactionManager>,
+        order: &RunnerOrder,
+    ) -> AppResult<RunnerOrder> {
+        let mut uow = tx_manager.begin_order_uow().await?;
+        let saved = match uow.create_runner_order(order).await {
+            Ok(saved) => saved,
+            Err(err) => {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        };
+        uow.commit().await?;
+        Ok(saved)
+    }
+
+    async fn update_in_transaction(
+        &self,
+        tx_manager: &Arc<dyn TransactionManager>,
+        order: &RunnerOrder,
+    ) -> AppResult<RunnerOrder> {
+        let mut uow = tx_manager.begin_order_uow().await?;
+        let updated = match uow.update_runner_order(order).await {
+            Ok(updated) => updated,
+            Err(err) => {
+                let _ = uow.rollback().await;
+                return Err(err);
+            }
+        };
+        uow.commit().await?;
+        Ok(updated)
     }
 
     pub async fn create(&self, input: CreateRunnerOrderInput) -> AppResult<RunnerOrder> {
@@ -39,6 +84,11 @@ impl RunnerOrderService {
             fee,
             input.distance_km,
         )?;
+
+        if let Some(tx_manager) = &self.tx_manager {
+            return self.create_in_transaction(tx_manager, &order).await;
+        }
+
         self.repo.create(&order).await
     }
 
@@ -53,9 +103,16 @@ impl RunnerOrderService {
         user_id: Ulid,
         order_id: Ulid,
         reason: Option<String>,
+        cancel_timeout_secs: u64,
     ) -> AppResult<RunnerOrder> {
         let mut order = self.must_get_for_user(user_id, order_id).await?;
+        ensure_cancel_within_window(order.created_at, order.pay_time, cancel_timeout_secs)?;
         order.cancel(reason)?;
+
+        if let Some(tx_manager) = &self.tx_manager {
+            return self.update_in_transaction(tx_manager, &order).await;
+        }
+
         self.repo.update(&order).await
     }
 
@@ -106,7 +163,11 @@ impl RunnerOrderService {
                 }
 
                 order.close_unpaid_timeout()?;
-                self.repo.update(&order).await?;
+                if let Some(tx_manager) = &self.tx_manager {
+                    self.update_in_transaction(tx_manager, &order).await?;
+                } else {
+                    self.repo.update(&order).await?;
+                }
                 affected += 1;
             }
         }
@@ -132,7 +193,11 @@ impl RunnerOrderService {
                 }
 
                 order.admin_accept()?;
-                self.repo.update(&order).await?;
+                if let Some(tx_manager) = &self.tx_manager {
+                    self.update_in_transaction(tx_manager, &order).await?;
+                } else {
+                    self.repo.update(&order).await?;
+                }
                 affected += 1;
             }
         }
@@ -162,4 +227,21 @@ fn calc_service_fee(distance_km: Option<f64>) -> i32 {
     }
     let extra_km = (distance_km - RUNNER_FREE_DISTANCE_KM).ceil() as i32;
     RUNNER_BASE_FEE + extra_km * RUNNER_SURCHARGE_PER_EXTRA_KM
+}
+
+fn ensure_cancel_within_window(
+    created_at: chrono::DateTime<Utc>,
+    pay_time: Option<chrono::DateTime<Utc>>,
+    cancel_timeout_secs: u64,
+) -> AppResult<()> {
+    if cancel_timeout_secs == 0 {
+        return Err(AppError::Validation("已超过可取消时间".into()));
+    }
+
+    let base = pay_time.unwrap_or(created_at);
+    let elapsed = Utc::now().signed_duration_since(base).num_seconds();
+    if elapsed >= cancel_timeout_secs as i64 {
+        return Err(AppError::Validation("已超过可取消时间".into()));
+    }
+    Ok(())
 }

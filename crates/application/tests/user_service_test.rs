@@ -29,6 +29,11 @@ impl UserRepository for InMemoryUserRepo {
         Ok(guard.get(phone).cloned())
     }
 
+    async fn find_by_id(&self, user_id: Ulid) -> AppResult<Option<User>> {
+        let guard = self.by_openid.lock().await;
+        Ok(guard.values().find(|item| item.id == user_id).cloned())
+    }
+
     async fn create(&self, user: &User) -> AppResult<User> {
         let mut openid_guard = self.by_openid.lock().await;
         openid_guard.insert(user.openid.clone(), user.clone());
@@ -53,6 +58,23 @@ impl UserRepository for InMemoryUserRepo {
 
         let mut phone_guard = self.by_phone.lock().await;
         phone_guard.insert(phone, updated.clone());
+        Ok(updated)
+    }
+
+    async fn set_current_store(&self, user_id: Ulid, store_id: Ulid) -> AppResult<User> {
+        let mut openid_guard = self.by_openid.lock().await;
+        let entry = openid_guard
+            .values_mut()
+            .find(|item| item.id == user_id)
+            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+        entry.current_store_id = Some(store_id);
+        let updated = entry.clone();
+        drop(openid_guard);
+
+        if let Some(phone) = &updated.phone {
+            let mut phone_guard = self.by_phone.lock().await;
+            phone_guard.insert(phone.clone(), updated.clone());
+        }
         Ok(updated)
     }
 }

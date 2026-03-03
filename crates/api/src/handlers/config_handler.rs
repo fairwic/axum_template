@@ -15,6 +15,7 @@ fn to_response(config: &BizConfig) -> ConfigResponse {
         runner_banner_text: config.runner_banner_text.clone(),
         pay_timeout_secs: config.pay_timeout_secs,
         auto_accept_secs: config.auto_accept_secs,
+        cancel_timeout_secs: config.cancel_timeout_secs,
     }
 }
 
@@ -44,6 +45,11 @@ fn validate_update(payload: &UpdateConfigRequest) -> AppResult<()> {
     }
     if payload.auto_accept_secs == 0 {
         return Err(AppError::Validation("auto_accept_secs must be > 0".into()));
+    }
+    if payload.cancel_timeout_secs == 0 {
+        return Err(AppError::Validation(
+            "cancel_timeout_secs must be > 0".into(),
+        ));
     }
     Ok(())
 }
@@ -98,6 +104,7 @@ pub async fn admin_update_config(
         config.runner_banner_text = payload.runner_banner_text;
         config.pay_timeout_secs = payload.pay_timeout_secs;
         config.auto_accept_secs = payload.auto_accept_secs;
+        config.cancel_timeout_secs = payload.cancel_timeout_secs;
         config.clone()
     };
 

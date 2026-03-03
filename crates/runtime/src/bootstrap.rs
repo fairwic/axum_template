@@ -1,22 +1,22 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
-use async_trait::async_trait;
 use axum_api::state::AppState;
 use axum_application::services::store_service::LbsService;
 use axum_application::{
     AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
     RunnerOrderService, StoreService, UserService,
 };
-use axum_domain::{CacheService, SmsGateway, WechatAuthClient};
+use axum_domain::{CacheService, SmsGateway, TransactionManager, WechatAuthClient};
 use axum_infrastructure::{
-    AppConfig, LogSmsGateway, MemoryCacheService, PgAddressRepository, PgAdminRepository,
-    PgCartRepository, PgCategoryRepository, PgGoodsOrderRepository, PgProductRepository,
-    PgRunnerOrderRepository, PgStoreRepository, PgUserRepository, WechatMiniProgramClient,
+    AppConfig, CacheProvider, LbsProvider, LogSmsGateway, MemoryCacheService, PgAddressRepository,
+    PgAdminRepository, PgCartRepository, PgCategoryRepository, PgGoodsOrderRepository,
+    PgProductRepository, PgRunnerOrderRepository, PgStoreRepository, PgTransactionManager,
+    PgUserRepository, RedisCacheService, WechatMiniProgramClient,
 };
 
-/// Build AppState with minimal dependencies
 pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow::Result<AppState> {
     let user_repo = Arc::new(PgUserRepository::new(pool.clone()));
     let store_repo = Arc::new(PgStoreRepository::new(pool.clone()));
@@ -26,15 +26,27 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
     let goods_order_repo = Arc::new(PgGoodsOrderRepository::new(pool.clone()));
     let runner_order_repo = Arc::new(PgRunnerOrderRepository::new(pool.clone()));
     let address_repo = Arc::new(PgAddressRepository::new(pool.clone()));
-    let admin_repo = Arc::new(PgAdminRepository::new(pool));
+    let admin_repo = Arc::new(PgAdminRepository::new(pool.clone()));
+    let tx_manager: Arc<dyn TransactionManager> = Arc::new(PgTransactionManager::new(pool));
+
     let wechat_auth: Arc<dyn WechatAuthClient> = Arc::new(WechatMiniProgramClient::new(
         config.wechat.app_id.clone(),
         config.wechat.app_secret.clone(),
         config.wechat.api_base.clone(),
         config.wechat.timeout_secs,
     )?);
-    let cache_service: Arc<dyn CacheService> = Arc::new(MemoryCacheService::new());
+
+    let cache_service: Arc<dyn CacheService> = match config.runtime.cache_provider {
+        CacheProvider::Memory => Arc::new(MemoryCacheService::new()),
+        CacheProvider::Redis => {
+            Arc::new(RedisCacheService::new(&config.redis.url, config.redis.max_connections).await?)
+        }
+    };
+
     let sms_gateway: Arc<dyn SmsGateway> = Arc::new(LogSmsGateway);
+    let lbs_service: Arc<dyn LbsService> = match config.runtime.lbs_provider {
+        LbsProvider::Noop => Arc::new(NoopLbs),
+    };
 
     let user_service = UserService::new(user_repo).with_auth(
         wechat_auth,
@@ -43,13 +55,15 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
         config.sms.login_code_ttl_secs,
     );
     let admin_service = AdminService::new(admin_repo);
-    let store_service = StoreService::new(store_repo.clone(), Arc::new(NoopLbs));
+    let store_service = StoreService::new(store_repo.clone(), lbs_service);
     let category_service = CategoryService::new(category_repo);
     let product_service = ProductService::new(product_repo.clone());
     let cart_service = CartService::new(cart_repo);
     let order_service =
-        OrderService::new(goods_order_repo, product_repo.clone(), store_repo.clone());
-    let runner_order_service = RunnerOrderService::new(runner_order_repo, store_repo);
+        OrderService::new(goods_order_repo, product_repo.clone(), store_repo.clone())
+            .with_transaction_manager(tx_manager.clone());
+    let runner_order_service =
+        RunnerOrderService::new(runner_order_repo, store_repo).with_transaction_manager(tx_manager);
     let address_service = AddressService::new(address_repo);
 
     Ok(AppState::new(

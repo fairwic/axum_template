@@ -59,6 +59,23 @@ impl UserRepository for InMemoryUserRepo {
         user.current_store_id = Some(store_id);
         Ok(user.clone())
     }
+
+    async fn find_by_phone(&self, phone: &str) -> AppResult<Option<User>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .values()
+            .find(|item| item.phone.as_deref() == Some(phone))
+            .cloned())
+    }
+
+    async fn bind_phone(&self, user_id: Ulid, phone: String) -> AppResult<User> {
+        let mut guard = self.inner.lock().await;
+        let user = guard
+            .get_mut(&user_id)
+            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+        user.phone = Some(phone);
+        Ok(user.clone())
+    }
 }
 
 #[derive(Default)]
@@ -102,6 +119,12 @@ impl StoreRepository for InMemoryStoreRepo {
         let guard = self.inner.lock().await;
         Ok(guard.get(&store_id.to_string()).cloned())
     }
+
+    async fn update(&self, store: &Store) -> AppResult<Store> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(store.id.to_string(), store.clone());
+        Ok(store.clone())
+    }
 }
 
 #[derive(Default)]
@@ -121,6 +144,17 @@ impl CategoryRepository for InMemoryCategoryRepo {
     }
 
     async fn create(&self, category: &Category) -> AppResult<Category> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(category.id.to_string(), category.clone());
+        Ok(category.clone())
+    }
+
+    async fn find_by_id(&self, category_id: ulid::Ulid) -> AppResult<Option<Category>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&category_id.to_string()).cloned())
+    }
+
+    async fn update(&self, category: &Category) -> AppResult<Category> {
         let mut guard = self.inner.lock().await;
         guard.insert(category.id.to_string(), category.clone());
         Ok(category.clone())
@@ -206,6 +240,34 @@ impl ProductRepository for InMemoryProductRepo {
 
     async fn create(&self, product: &Product) -> AppResult<Product> {
         Ok(product.clone())
+    }
+
+    async fn update(&self, product: &Product) -> AppResult<Product> {
+        Ok(product.clone())
+    }
+
+    async fn find_by_id(
+        &self,
+        _store_id: ulid::Ulid,
+        _product_id: ulid::Ulid,
+    ) -> AppResult<Option<Product>> {
+        Ok(None)
+    }
+
+    async fn find_by_ids(
+        &self,
+        _store_id: ulid::Ulid,
+        _product_ids: &[ulid::Ulid],
+    ) -> AppResult<Vec<Product>> {
+        Ok(vec![])
+    }
+
+    async fn try_lock_stock(&self, _product_id: ulid::Ulid, _qty: i32) -> AppResult<bool> {
+        Ok(false)
+    }
+
+    async fn release_stock(&self, _product_id: ulid::Ulid, _qty: i32) -> AppResult<()> {
+        Ok(())
     }
 }
 
