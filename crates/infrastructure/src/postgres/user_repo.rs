@@ -23,18 +23,19 @@ impl PgUserRepository {
 impl UserRepository for PgUserRepository {
     async fn create(&self, user: &User) -> AppResult<User> {
         let model = UserModel::from_entity(user);
-        let row = sqlx::query_as::<_, UserModel>(
+        let row = sqlx::query_as!(
+            UserModel,
             r#"
             INSERT INTO users (id, name, email, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id, name, email, created_at, updated_at
             "#,
+            model.id,
+            model.name,
+            model.email,
+            model.created_at,
+            model.updated_at
         )
-        .bind(model.id)
-        .bind(model.name)
-        .bind(model.email)
-        .bind(model.created_at)
-        .bind(model.updated_at)
         .fetch_one(&self.pool)
         .await?;
 
@@ -42,10 +43,11 @@ impl UserRepository for PgUserRepository {
     }
 
     async fn find_by_id(&self, id: Ulid) -> AppResult<Option<User>> {
-        let row = sqlx::query_as::<_, UserModel>(
+        let row = sqlx::query_as!(
+            UserModel,
             r#"SELECT id, name, email, created_at, updated_at FROM users WHERE id = $1"#,
+            id.to_string()
         )
-        .bind(id.to_string())
         .fetch_optional(&self.pool)
         .await?;
 
@@ -56,8 +58,9 @@ impl UserRepository for PgUserRepository {
     }
 
     async fn list(&self) -> AppResult<Vec<User>> {
-        let rows = sqlx::query_as::<_, UserModel>(
-            r#"SELECT id, name, email, created_at, updated_at FROM users ORDER BY created_at DESC"#,
+        let rows = sqlx::query_as!(
+            UserModel,
+            r#"SELECT id, name, email, created_at, updated_at FROM users ORDER BY created_at DESC"#
         )
         .fetch_all(&self.pool)
         .await?;
@@ -70,18 +73,19 @@ impl UserRepository for PgUserRepository {
     }
 
     async fn update(&self, user: &User) -> AppResult<User> {
-        let row = sqlx::query_as::<_, UserModel>(
+        let row = sqlx::query_as!(
+            UserModel,
             r#"
             UPDATE users
             SET name = $2, email = $3, updated_at = $4
             WHERE id = $1
             RETURNING id, name, email, created_at, updated_at
             "#,
+            user.id.to_string(),
+            &user.name,
+            &user.email,
+            user.updated_at
         )
-        .bind(user.id.to_string())
-        .bind(&user.name)
-        .bind(&user.email)
-        .bind(user.updated_at)
         .fetch_one(&self.pool)
         .await?;
 
@@ -89,10 +93,12 @@ impl UserRepository for PgUserRepository {
     }
 
     async fn delete(&self, id: Ulid) -> AppResult<bool> {
-        let result = sqlx::query("DELETE FROM users WHERE id = $1")
-            .bind(id.to_string())
-            .execute(&self.pool)
-            .await?;
+        let result = sqlx::query!(
+            "DELETE FROM users WHERE id = $1",
+            id.to_string()
+        )
+        .execute(&self.pool)
+        .await?;
         Ok(result.rows_affected() > 0)
     }
 }

@@ -12,5 +12,10 @@ pub mod postgres {
     pub mod user_repo;
 }
 
+pub mod redis {
+    pub mod cache;
+}
+
 pub use config::AppConfig;
 pub use postgres::user_repo::PgUserRepository;
+pub use redis::cache::RedisCacheService;
