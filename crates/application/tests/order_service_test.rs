@@ -369,3 +369,121 @@ async fn test_order_preview_returns_config_based_delivery_fee() {
     assert_eq!(preview.amount_payable, 2280);
     assert!(preview.deliverable);
 }
+
+#[tokio::test]
+async fn test_order_auto_close_unpaid_releases_stock() {
+    let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
+
+    let user_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
+    let product = Product::new(
+        store_id,
+        Ulid::new(),
+        "椰子水".into(),
+        None,
+        "img".into(),
+        vec![],
+        990,
+        None,
+        10,
+        ProductStatus::On,
+        vec![],
+    )
+    .unwrap();
+    product_repo.create(&product).await.unwrap();
+
+    let created = service
+        .create(CreateGoodsOrderInput {
+            user_id,
+            store_id,
+            delivery_type: DeliveryType::Delivery,
+            items: vec![GoodsOrderItem {
+                product_id: product.id,
+                title_snapshot: "椰子水".into(),
+                price_snapshot: 990,
+                qty: 2,
+            }],
+            distance_km: Some(2.0),
+            address_snapshot: Some(serde_json::json!({"detail":"A-101"})),
+            store_snapshot: None,
+            remark: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(created.status, GoodsOrderStatus::PendingPay);
+
+    let closed_count = service.auto_close_unpaid_orders(0).await.unwrap();
+    assert_eq!(closed_count, 1);
+
+    let closed = service.get_by_user(user_id, created.id).await.unwrap();
+    assert_eq!(closed.status, GoodsOrderStatus::Closed);
+    assert_eq!(closed.pay_status, PayStatus::Unpaid);
+
+    let product_after = product_repo
+        .find_by_ids(store_id, &[product.id])
+        .await
+        .unwrap()
+        .pop()
+        .unwrap();
+    assert_eq!(product_after.stock, 10);
+}
+
+#[tokio::test]
+async fn test_order_auto_accept_pending_orders() {
+    let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
+
+    let user_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
+    let product = Product::new(
+        store_id,
+        Ulid::new(),
+        "椰子水".into(),
+        None,
+        "img".into(),
+        vec![],
+        990,
+        None,
+        10,
+        ProductStatus::On,
+        vec![],
+    )
+    .unwrap();
+    product_repo.create(&product).await.unwrap();
+
+    let created = service
+        .create(CreateGoodsOrderInput {
+            user_id,
+            store_id,
+            delivery_type: DeliveryType::Delivery,
+            items: vec![GoodsOrderItem {
+                product_id: product.id,
+                title_snapshot: "椰子水".into(),
+                price_snapshot: 990,
+                qty: 1,
+            }],
+            distance_km: Some(2.0),
+            address_snapshot: Some(serde_json::json!({"detail":"A-101"})),
+            store_snapshot: None,
+            remark: None,
+        })
+        .await
+        .unwrap();
+    let paid = service.pay(user_id, created.id).await.unwrap();
+    assert_eq!(paid.status, GoodsOrderStatus::PendingAccept);
+
+    let accepted_count = service.auto_accept_pending_orders(0).await.unwrap();
+    assert_eq!(accepted_count, 1);
+
+    let accepted = service.get_by_user(user_id, created.id).await.unwrap();
+    assert_eq!(accepted.status, GoodsOrderStatus::Accepted);
+}

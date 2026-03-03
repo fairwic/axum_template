@@ -8,6 +8,7 @@ pub mod admin_store_handler;
 pub mod auth_handler;
 pub mod cart_handler;
 pub mod category_handler;
+pub mod config_handler;
 pub mod health_handler;
 pub mod member_handler;
 pub mod order_handler;

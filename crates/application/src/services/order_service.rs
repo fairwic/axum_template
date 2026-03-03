@@ -10,6 +10,7 @@ use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::ProductStatus;
 use axum_domain::product::repo::ProductRepository;
 use axum_domain::store::repo::StoreRepository;
+use chrono::{Duration, Utc};
 use ulid::Ulid;
 
 #[derive(Clone)]
@@ -138,6 +139,58 @@ impl OrderService {
         let mut order = self.must_get(order_id).await?;
         order.admin_complete()?;
         self.repo.update(&order).await
+    }
+
+    pub async fn auto_close_unpaid_orders(&self, timeout_secs: u64) -> AppResult<usize> {
+        let cutoff = Utc::now() - Duration::seconds(timeout_secs as i64);
+        let stores = self.store_repo.list().await?;
+        let mut affected = 0usize;
+
+        for store in stores {
+            let orders = self.repo.list_by_store(store.id).await?;
+            for mut order in orders {
+                if order.status != axum_domain::order::entity::GoodsOrderStatus::PendingPay {
+                    continue;
+                }
+                if order.created_at > cutoff {
+                    continue;
+                }
+
+                order.close_unpaid_timeout()?;
+                let updated = self.repo.update(&order).await?;
+                for item in &updated.items {
+                    self.product_repo
+                        .release_stock(item.product_id, item.qty)
+                        .await?;
+                }
+                affected += 1;
+            }
+        }
+        Ok(affected)
+    }
+
+    pub async fn auto_accept_pending_orders(&self, timeout_secs: u64) -> AppResult<usize> {
+        let cutoff = Utc::now() - Duration::seconds(timeout_secs as i64);
+        let stores = self.store_repo.list().await?;
+        let mut affected = 0usize;
+
+        for store in stores {
+            let orders = self.repo.list_by_store(store.id).await?;
+            for mut order in orders {
+                if order.status != axum_domain::order::entity::GoodsOrderStatus::PendingAccept {
+                    continue;
+                }
+                let paid_at = order.pay_time.unwrap_or(order.created_at);
+                if paid_at > cutoff {
+                    continue;
+                }
+
+                order.admin_accept()?;
+                self.repo.update(&order).await?;
+                affected += 1;
+            }
+        }
+        Ok(affected)
     }
 
     async fn must_get(&self, order_id: Ulid) -> AppResult<GoodsOrder> {

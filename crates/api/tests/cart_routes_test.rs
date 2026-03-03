@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::Request,
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
@@ -23,6 +24,7 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
+use chrono::Utc;
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -200,6 +202,16 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
+fn user_auth_header(user_id: Ulid) -> String {
+    let claims = Claims {
+        sub: user_id.to_string(),
+        role: "USER".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 #[tokio::test]
 async fn test_cart_flow() {
     let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
@@ -232,13 +244,14 @@ async fn test_cart_flow() {
     let app = create_router(state);
 
     let user_id = Ulid::new();
+    let auth = user_auth_header(user_id);
     let store_id = Ulid::new();
     let product_id = Ulid::new();
 
     let get_req = Request::builder()
         .method("GET")
         .uri(format!("/api/v1/cart?store_id={}", store_id))
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::empty())
         .unwrap();
     let get_res = app.clone().oneshot(get_req).await.unwrap();
@@ -257,7 +270,7 @@ async fn test_cart_flow() {
         .method("POST")
         .uri("/api/v1/cart/add")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(add_payload.to_string()))
         .unwrap();
     let add_res = app.clone().oneshot(add_req).await.unwrap();
@@ -275,7 +288,7 @@ async fn test_cart_flow() {
         .method("POST")
         .uri("/api/v1/cart/update_qty")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(update_payload.to_string()))
         .unwrap();
     let update_res = app.clone().oneshot(update_req).await.unwrap();
@@ -292,7 +305,7 @@ async fn test_cart_flow() {
         .method("POST")
         .uri("/api/v1/cart/remove")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(remove_payload.to_string()))
         .unwrap();
     let remove_res = app.clone().oneshot(remove_req).await.unwrap();
@@ -305,7 +318,7 @@ async fn test_cart_flow() {
         .method("POST")
         .uri("/api/v1/cart/add")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(add_payload.to_string()))
         .unwrap();
     let _ = app.clone().oneshot(add_req).await.unwrap();
@@ -315,7 +328,7 @@ async fn test_cart_flow() {
         .method("POST")
         .uri("/api/v1/cart/clear")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth)
         .body(Body::from(clear_payload.to_string()))
         .unwrap();
     let clear_res = app.oneshot(clear_req).await.unwrap();

@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::{Request, StatusCode},
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
@@ -23,6 +24,7 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
+use chrono::Utc;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -254,6 +256,16 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
+fn admin_auth_header() -> String {
+    let claims = Claims {
+        sub: Ulid::new().to_string(),
+        role: "PLATFORM".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 #[tokio::test]
 async fn test_admin_catalog_manage_flow() {
     let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
@@ -284,11 +296,13 @@ async fn test_admin_catalog_manage_flow() {
         300,
     );
     let app = create_router(state);
+    let admin_auth = admin_auth_header();
 
     let create_store_req = Request::builder()
         .method("POST")
         .uri("/api/admin/v1/stores")
         .header("content-type", "application/json")
+        .header("authorization", admin_auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "name": "北区店",
@@ -325,6 +339,7 @@ async fn test_admin_catalog_manage_flow() {
         .method("PUT")
         .uri(format!("/api/admin/v1/stores/{store_id}"))
         .header("content-type", "application/json")
+        .header("authorization", admin_auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "name": "北区店-更新",
@@ -355,6 +370,7 @@ async fn test_admin_catalog_manage_flow() {
     let list_store_req = Request::builder()
         .method("GET")
         .uri("/api/admin/v1/stores")
+        .header("authorization", admin_auth.clone())
         .body(Body::empty())
         .unwrap();
     let list_store_res = app.clone().oneshot(list_store_req).await.unwrap();
@@ -370,6 +386,7 @@ async fn test_admin_catalog_manage_flow() {
         .method("POST")
         .uri("/api/admin/v1/categories")
         .header("content-type", "application/json")
+        .header("authorization", admin_auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "store_id": store_id,
@@ -396,6 +413,7 @@ async fn test_admin_catalog_manage_flow() {
         .method("PUT")
         .uri(format!("/api/admin/v1/categories/{category_id}"))
         .header("content-type", "application/json")
+        .header("authorization", admin_auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "name": "饮料-更新",
@@ -419,6 +437,7 @@ async fn test_admin_catalog_manage_flow() {
         .method("POST")
         .uri("/api/admin/v1/products")
         .header("content-type", "application/json")
+        .header("authorization", admin_auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "store_id": store_id,
@@ -452,6 +471,7 @@ async fn test_admin_catalog_manage_flow() {
         .method("PUT")
         .uri(format!("/api/admin/v1/products/{product_id}"))
         .header("content-type", "application/json")
+        .header("authorization", admin_auth)
         .body(Body::from(
             serde_json::json!({
                 "store_id": store_id,

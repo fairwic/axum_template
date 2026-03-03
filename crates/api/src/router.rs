@@ -1,34 +1,53 @@
 //! API Router Configuration
 
-use axum::{routing::get, Json, Router};
+use axum::{middleware, routing::get, Json, Router};
 use utoipa::OpenApi;
 
+use crate::auth::middleware::{require_admin_auth, require_user_auth};
 use crate::handlers::health_handler;
 use crate::openapi::ApiDoc;
 use crate::routes::{
     address, admin_auth, admin_category, admin_order, admin_product, admin_runner_order,
-    admin_store, auth, cart, category, member, order, product, runner_order, store,
+    admin_store, auth, cart, category, config, member, order, product, runner_order, store,
 };
 use crate::state::AppState;
 
 pub fn create_router(state: AppState) -> Router {
-    let api_routes = Router::<AppState>::new()
+    let public_api_routes = Router::<AppState>::new()
         .merge(auth::routes())
+        .merge(config::routes())
+        .merge(store::public_routes())
+        .merge(category::routes())
+        .merge(product::routes());
+    let protected_api_routes = Router::<AppState>::new()
         .merge(member::routes())
         .merge(address::routes())
-        .merge(store::routes())
+        .merge(store::protected_routes())
         .merge(cart::routes())
         .merge(order::routes())
         .merge(runner_order::routes())
-        .merge(category::routes())
-        .merge(product::routes());
-    let admin_routes = Router::<AppState>::new()
-        .merge(admin_auth::routes())
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            require_user_auth,
+        ));
+    let api_routes = Router::<AppState>::new()
+        .merge(public_api_routes)
+        .merge(protected_api_routes);
+
+    let admin_public_routes = Router::<AppState>::new().merge(admin_auth::routes());
+    let admin_protected_routes = Router::<AppState>::new()
         .merge(admin_store::routes())
         .merge(admin_category::routes())
         .merge(admin_product::routes())
         .merge(admin_order::routes())
-        .merge(admin_runner_order::routes());
+        .merge(admin_runner_order::routes())
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            require_admin_auth,
+        ));
+    let admin_routes = Router::<AppState>::new()
+        .merge(admin_public_routes)
+        .merge(admin_protected_routes);
 
     let openapi_route = Router::<AppState>::new().route(
         "/api-docs/openapi.json",

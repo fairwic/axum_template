@@ -6,6 +6,31 @@ use axum_application::{
 };
 
 #[derive(Clone)]
+pub struct BizConfig {
+    pub delivery_free_radius_km: f64,
+    pub runner_service_fee: i32,
+    pub customer_service_phone: String,
+    pub runner_banner_enabled: bool,
+    pub runner_banner_text: String,
+    pub pay_timeout_secs: u64,
+    pub auto_accept_secs: u64,
+}
+
+impl Default for BizConfig {
+    fn default() -> Self {
+        Self {
+            delivery_free_radius_km: 3.0,
+            runner_service_fee: 200,
+            customer_service_phone: "400-000-0000".into(),
+            runner_banner_enabled: true,
+            runner_banner_text: "顺路代取快递".into(),
+            pay_timeout_secs: 15 * 60,
+            auto_accept_secs: 5 * 60,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct AppState {
     pub user_service: Arc<UserService>,
     pub admin_service: Arc<AdminService>,
@@ -19,6 +44,7 @@ pub struct AppState {
     pub jwt_secret: String,
     pub jwt_ttl_secs: u64,
     pub sms_code_ttl_secs: u64,
+    pub biz_config: BizConfig,
 }
 
 impl AppState {
@@ -46,6 +72,7 @@ impl AppState {
             jwt_secret,
             jwt_ttl_secs,
             sms_code_ttl_secs,
+            biz_config: BizConfig::default(),
         }
     }
 
@@ -61,6 +88,11 @@ impl AppState {
 
     pub fn with_address_service(mut self, address_service: AddressService) -> Self {
         self.address_service = Some(Arc::new(address_service));
+        self
+    }
+
+    pub fn with_biz_config(mut self, biz_config: BizConfig) -> Self {
+        self.biz_config = biz_config;
         self
     }
 }

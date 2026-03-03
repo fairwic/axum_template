@@ -47,8 +47,9 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
     let category_service = CategoryService::new(category_repo);
     let product_service = ProductService::new(product_repo.clone());
     let cart_service = CartService::new(cart_repo);
-    let order_service = OrderService::new(goods_order_repo, product_repo.clone(), store_repo);
-    let runner_order_service = RunnerOrderService::new(runner_order_repo);
+    let order_service =
+        OrderService::new(goods_order_repo, product_repo.clone(), store_repo.clone());
+    let runner_order_service = RunnerOrderService::new(runner_order_repo, store_repo);
     let address_service = AddressService::new(address_repo);
 
     Ok(AppState::new(

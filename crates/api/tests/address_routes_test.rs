@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::Request,
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AddressService, AdminService, CartService, CategoryService, ProductService, StoreService,
@@ -26,6 +27,7 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
+use chrono::Utc;
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -249,16 +251,27 @@ fn create_test_app() -> axum::Router {
     create_router(state)
 }
 
+fn user_auth_header(user_id: Ulid) -> String {
+    let claims = Claims {
+        sub: user_id.to_string(),
+        role: "USER".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 #[tokio::test]
 async fn test_address_crud_flow() {
     let app = create_test_app();
     let user_id = Ulid::new();
+    let auth = user_auth_header(user_id);
 
     let create_req = Request::builder()
         .method("POST")
         .uri("/api/v1/addresses")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(
             json!({
                 "name":"张三",
@@ -283,7 +296,7 @@ async fn test_address_crud_flow() {
     let list_req = Request::builder()
         .method("GET")
         .uri("/api/v1/addresses")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::empty())
         .unwrap();
     let list_res = app.clone().oneshot(list_req).await.unwrap();
@@ -295,7 +308,7 @@ async fn test_address_crud_flow() {
     let set_default_req = Request::builder()
         .method("POST")
         .uri(format!("/api/v1/addresses/{}/set_default", address_id))
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", auth)
         .body(Body::empty())
         .unwrap();
     let set_default_res = app.clone().oneshot(set_default_req).await.unwrap();

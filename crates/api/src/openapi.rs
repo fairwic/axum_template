@@ -2,12 +2,12 @@ use utoipa::OpenApi;
 
 use crate::dtos::{
     address_dto, admin_auth_dto, admin_order_dto, admin_runner_order_dto, auth_dto, cart_dto,
-    category_dto, member_dto, order_dto, product_dto, runner_order_dto, store_dto,
+    category_dto, config_dto, member_dto, order_dto, product_dto, runner_order_dto, store_dto,
 };
 use crate::handlers::{
     address_handler, admin_auth_handler, admin_category_handler, admin_order_handler,
     admin_product_handler, admin_runner_order_handler, admin_store_handler, auth_handler,
-    cart_handler, category_handler, member_handler, order_handler, product_handler,
+    cart_handler, category_handler, config_handler, member_handler, order_handler, product_handler,
     runner_order_handler, store_handler,
 };
 use axum_common::response::{self, PagedResponse};
@@ -23,6 +23,7 @@ use axum_common::response::{self, PagedResponse};
         auth_handler::wechat_login,
         auth_handler::send_sms_code,
         auth_handler::phone_sms_login,
+        config_handler::get_config,
         address_handler::list_addresses,
         address_handler::create_address,
         address_handler::update_address,
@@ -78,6 +79,7 @@ use axum_common::response::{self, PagedResponse};
             auth_dto::UserResponse,
             auth_dto::LoginResponse,
             auth_dto::SendSmsCodeResponse,
+            config_dto::ConfigResponse,
             address_dto::CreateAddressRequest,
             address_dto::UpdateAddressRequest,
             address_dto::AddressResponse,
@@ -121,6 +123,7 @@ use axum_common::response::{self, PagedResponse};
             product_dto::ProductResponse,
             response::ApiResponse<auth_dto::LoginResponse>,
             response::ApiResponse<auth_dto::SendSmsCodeResponse>,
+            response::ApiResponse<config_dto::ConfigResponse>,
             response::ApiResponse<Vec<address_dto::AddressResponse>>,
             response::ApiResponse<address_dto::AddressResponse>,
             response::ApiResponse<bool>,
@@ -148,6 +151,7 @@ use axum_common::response::{self, PagedResponse};
     ),
     tags(
         (name = "Auth", description = "Login and tokens"),
+        (name = "Config", description = "Global config"),
         (name = "Address", description = "Address management"),
         (name = "Admin", description = "Admin login"),
         (name = "AdminStore", description = "Admin store management"),

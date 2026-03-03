@@ -144,6 +144,18 @@ impl RunnerOrder {
         Ok(())
     }
 
+    pub fn close_unpaid_timeout(&mut self) -> Result<(), DomainError> {
+        if self.status != RunnerOrderStatus::PendingPay {
+            return Err(DomainError::InvalidState(
+                "only pending pay runner order can be closed".into(),
+            ));
+        }
+        let now = Utc::now();
+        self.status = RunnerOrderStatus::Closed;
+        self.updated_at = now;
+        Ok(())
+    }
+
     pub fn admin_accept(&mut self) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::PendingAccept {
             return Err(DomainError::InvalidState(

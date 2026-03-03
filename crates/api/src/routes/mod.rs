@@ -8,6 +8,7 @@ pub mod admin_store;
 pub mod auth;
 pub mod cart;
 pub mod category;
+pub mod config;
 pub mod member;
 pub mod order;
 pub mod product;

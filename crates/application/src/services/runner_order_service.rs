@@ -6,6 +6,8 @@ use crate::dtos::runner_order_dto::CreateRunnerOrderInput;
 use axum_common::{AppError, AppResult};
 use axum_domain::runner_order::entity::RunnerOrder;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
+use axum_domain::store::repo::StoreRepository;
+use chrono::{Duration, Utc};
 use ulid::Ulid;
 
 const RUNNER_BASE_FEE: i32 = 200;
@@ -15,11 +17,12 @@ const RUNNER_FREE_DISTANCE_KM: f64 = 3.0;
 #[derive(Clone)]
 pub struct RunnerOrderService {
     repo: Arc<dyn RunnerOrderRepository>,
+    store_repo: Arc<dyn StoreRepository>,
 }
 
 impl RunnerOrderService {
-    pub fn new(repo: Arc<dyn RunnerOrderRepository>) -> Self {
-        Self { repo }
+    pub fn new(repo: Arc<dyn RunnerOrderRepository>, store_repo: Arc<dyn StoreRepository>) -> Self {
+        Self { repo, store_repo }
     }
 
     pub async fn create(&self, input: CreateRunnerOrderInput) -> AppResult<RunnerOrder> {
@@ -84,6 +87,56 @@ impl RunnerOrderService {
         let mut order = self.must_get(order_id).await?;
         order.admin_complete()?;
         self.repo.update(&order).await
+    }
+
+    pub async fn auto_close_unpaid_orders(&self, timeout_secs: u64) -> AppResult<usize> {
+        let cutoff = Utc::now() - Duration::seconds(timeout_secs as i64);
+        let stores = self.store_repo.list().await?;
+        let mut affected = 0usize;
+
+        for store in stores {
+            let orders = self.repo.list_by_store(store.id).await?;
+            for mut order in orders {
+                if order.status != axum_domain::runner_order::entity::RunnerOrderStatus::PendingPay
+                {
+                    continue;
+                }
+                if order.created_at > cutoff {
+                    continue;
+                }
+
+                order.close_unpaid_timeout()?;
+                self.repo.update(&order).await?;
+                affected += 1;
+            }
+        }
+        Ok(affected)
+    }
+
+    pub async fn auto_accept_pending_orders(&self, timeout_secs: u64) -> AppResult<usize> {
+        let cutoff = Utc::now() - Duration::seconds(timeout_secs as i64);
+        let stores = self.store_repo.list().await?;
+        let mut affected = 0usize;
+
+        for store in stores {
+            let orders = self.repo.list_by_store(store.id).await?;
+            for mut order in orders {
+                if order.status
+                    != axum_domain::runner_order::entity::RunnerOrderStatus::PendingAccept
+                {
+                    continue;
+                }
+                let paid_at = order.pay_time.unwrap_or(order.created_at);
+                if paid_at > cutoff {
+                    continue;
+                }
+
+                order.admin_accept()?;
+                self.repo.update(&order).await?;
+                affected += 1;
+            }
+        }
+        Ok(affected)
     }
 
     async fn must_get(&self, order_id: Ulid) -> AppResult<RunnerOrder> {

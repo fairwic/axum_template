@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::Request,
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
@@ -28,6 +29,7 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::{GoodsOrder, RunnerOrder, User};
+use chrono::Utc;
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -382,6 +384,26 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
+fn user_auth_header(user_id: Ulid) -> String {
+    let claims = Claims {
+        sub: user_id.to_string(),
+        role: "USER".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
+fn admin_auth_header() -> String {
+    let claims = Claims {
+        sub: Ulid::new().to_string(),
+        role: "PLATFORM".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
     let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
     let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
@@ -448,8 +470,8 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
     )
     .with_address_service(AddressService::new(address_repo))
     .with_order_services(
-        OrderService::new(order_repo, product_repo, store_repo),
-        RunnerOrderService::new(runner_repo),
+        OrderService::new(order_repo, product_repo, store_repo.clone()),
+        RunnerOrderService::new(runner_repo, store_repo),
     );
 
     create_router(state)
@@ -461,12 +483,14 @@ async fn test_goods_order_and_runner_order_flow() {
     let store_id = Ulid::new();
     let product_id = Ulid::new();
     let app = create_test_app(store_id, product_id).await;
+    let user_auth = user_auth_header(user_id);
+    let admin_auth = admin_auth_header();
 
     let create_address_req = Request::builder()
         .method("POST")
         .uri("/api/v1/addresses")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(
             json!({
                 "name":"张三",
@@ -494,6 +518,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/preview")
         .header("content-type", "application/json")
+        .header("authorization", user_auth.clone())
         .body(Body::from(
             json!({
                 "store_id": store_id.to_string(),
@@ -535,7 +560,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/create")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(create_order_payload.to_string()))
         .unwrap();
     let create_order_res = app.clone().oneshot(create_order_req).await.unwrap();
@@ -553,7 +578,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/pay")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(json!({"order_id": order_id}).to_string()))
         .unwrap();
     let pay_order_res = app.clone().oneshot(pay_order_req).await.unwrap();
@@ -568,7 +593,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri(format!("/api/v1/orders/{}/cancel", order_id))
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(r#"{"reason":"不想要了"}"#))
         .unwrap();
     let cancel_paid_res = app.clone().oneshot(cancel_paid_req).await.unwrap();
@@ -596,7 +621,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/create")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(create_order_unpaid_payload.to_string()))
         .unwrap();
     let create_order_unpaid_res = app.clone().oneshot(create_order_unpaid_req).await.unwrap();
@@ -615,7 +640,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri(format!("/api/v1/orders/{}/cancel", unpaid_order_id))
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(r#"{"reason":"重新下单"}"#))
         .unwrap();
     let cancel_unpaid_res = app.clone().oneshot(cancel_unpaid_req).await.unwrap();
@@ -642,7 +667,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/create")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(create_order_admin_payload.to_string()))
         .unwrap();
     let create_order_admin_res = app.clone().oneshot(create_order_admin_req).await.unwrap();
@@ -660,7 +685,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/orders/pay")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(
             json!({"order_id": order_id_for_admin}).to_string(),
         ))
@@ -679,6 +704,7 @@ async fn test_goods_order_and_runner_order_flow() {
             "/api/admin/v1/orders/{}/accept",
             order_id_for_admin
         ))
+        .header("authorization", admin_auth.clone())
         .body(Body::empty())
         .unwrap();
     let admin_accept_res = app.clone().oneshot(admin_accept_req).await.unwrap();
@@ -702,7 +728,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/runner_orders/create")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth.clone())
         .body(Body::from(create_runner_payload.to_string()))
         .unwrap();
     let create_runner_res = app.clone().oneshot(create_runner_req).await.unwrap();
@@ -721,7 +747,7 @@ async fn test_goods_order_and_runner_order_flow() {
         .method("POST")
         .uri("/api/v1/runner_orders/pay")
         .header("content-type", "application/json")
-        .header("x-user-id", user_id.to_string())
+        .header("authorization", user_auth)
         .body(Body::from(
             json!({"runner_order_id": runner_order_id}).to_string(),
         ))
@@ -740,6 +766,7 @@ async fn test_goods_order_and_runner_order_flow() {
             "/api/admin/v1/runner_orders/{}/accept",
             runner_order_id
         ))
+        .header("authorization", admin_auth)
         .body(Body::empty())
         .unwrap();
     let admin_accept_runner_res = app.oneshot(admin_accept_runner_req).await.unwrap();

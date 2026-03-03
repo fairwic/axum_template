@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::Request,
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
@@ -23,6 +24,7 @@ use axum_domain::store::entity::{Store, StoreStatus};
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
+use chrono::Utc;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -217,6 +219,16 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
+fn user_auth_header(user_id: Ulid) -> String {
+    let claims = Claims {
+        sub: user_id.to_string(),
+        role: "USER".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 #[tokio::test]
 async fn test_stores_nearby() {
     let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
@@ -268,6 +280,7 @@ async fn test_stores_nearby() {
         300,
     );
     let app = create_router(state);
+    let auth = user_auth_header(user.id);
 
     let req = Request::builder()
         .method("GET")
@@ -286,7 +299,7 @@ async fn test_stores_nearby() {
         .method("POST")
         .uri("/api/v1/stores/select")
         .header("content-type", "application/json")
-        .header("x-user-id", user.id.to_string())
+        .header("authorization", auth.clone())
         .body(Body::from(
             serde_json::json!({
                 "store_id": store.id.to_string()
@@ -303,7 +316,7 @@ async fn test_stores_nearby() {
     let current_req = Request::builder()
         .method("GET")
         .uri("/api/v1/stores/current")
-        .header("x-user-id", user.id.to_string())
+        .header("authorization", auth)
         .body(Body::empty())
         .unwrap();
     let current_res = app.oneshot(current_req).await.unwrap();
