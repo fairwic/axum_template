@@ -1,10 +1,11 @@
 //! Postgres implementation for UserRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
-use async_trait::async_trait;
 use sqlx::PgPool;
+use ulid::Ulid;
 
 use crate::models::user_model::UserModel;
 
@@ -58,8 +59,56 @@ impl UserRepository for PgUserRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(map_user_repo_error)?;
 
         row.into_entity()
+    }
+
+    async fn find_by_phone(&self, phone: &str) -> AppResult<Option<User>> {
+        let row = sqlx::query_as!(
+            UserModel,
+            r#"
+            SELECT id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            FROM users
+            WHERE phone = $1
+            "#,
+            phone
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match row {
+            Some(model) => Ok(Some(model.into_entity()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn bind_phone(&self, user_id: Ulid, phone: String) -> AppResult<User> {
+        let row = sqlx::query_as!(
+            UserModel,
+            r#"
+            UPDATE users
+            SET phone = $2, updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            "#,
+            user_id.to_string(),
+            phone
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_user_repo_error)?;
+
+        row.into_entity()
+    }
+}
+
+fn map_user_repo_error(error: sqlx::Error) -> axum_common::AppError {
+    match &error {
+        sqlx::Error::Database(database_error) if database_error.is_unique_violation() => {
+            axum_common::AppError::Conflict("手机号已绑定其他账号".into())
+        }
+        _ => error.into(),
     }
 }

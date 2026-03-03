@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_application::AdminService;
 use axum_common::AppResult;
 use axum_domain::admin::entity::{Admin, AdminRole};
 use axum_domain::admin::repo::AdminRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 
 #[derive(Default)]
@@ -33,7 +33,12 @@ async fn test_admin_login_success() {
     let service = AdminService::new(repo);
 
     service
-        .create_admin("13800000000".into(), "pass".into(), AdminRole::Platform, None)
+        .create_admin(
+            "13800000000".into(),
+            "pass".into(),
+            AdminRole::Platform,
+            None,
+        )
         .await
         .unwrap();
 
@@ -47,7 +52,12 @@ async fn test_admin_login_wrong_password() {
     let service = AdminService::new(repo);
 
     service
-        .create_admin("13800000001".into(), "pass".into(), AdminRole::Platform, None)
+        .create_admin(
+            "13800000001".into(),
+            "pass".into(),
+            AdminRole::Platform,
+            None,
+        )
         .await
         .unwrap();
 

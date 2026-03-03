@@ -37,7 +37,12 @@ fn status_to_string(status: &StoreStatus) -> String {
     }
 }
 
-fn to_response(store: Store, distance_km: f64, deliverable: bool, delivery_fee: i32) -> StoreNearbyResponse {
+fn to_response(
+    store: Store,
+    distance_km: f64,
+    deliverable: bool,
+    delivery_fee: i32,
+) -> StoreNearbyResponse {
     StoreNearbyResponse {
         id: store.id.to_string(),
         name: store.name,
@@ -67,7 +72,14 @@ pub async fn nearby_stores(
     let items = state.store_service.nearby(query.lat, query.lng).await?;
     let data = items
         .into_iter()
-        .map(|item| to_response(item.store, item.distance_km, item.deliverable, item.delivery_fee))
+        .map(|item| {
+            to_response(
+                item.store,
+                item.distance_km,
+                item.deliverable,
+                item.delivery_fee,
+            )
+        })
         .collect();
     Ok(ApiResponse::success(data))
 }

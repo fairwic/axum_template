@@ -1,7 +1,7 @@
 //! Runner order entity
 
-use crate::DomainError;
 use crate::order::entity::PayStatus;
+use crate::DomainError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
@@ -58,13 +58,17 @@ impl RunnerOrder {
         distance_km: Option<f64>,
     ) -> Result<Self, DomainError> {
         if express_company.trim().is_empty() {
-            return Err(DomainError::Validation("express_company is required".into()));
+            return Err(DomainError::Validation(
+                "express_company is required".into(),
+            ));
         }
         if pickup_code.trim().is_empty() {
             return Err(DomainError::Validation("pickup_code is required".into()));
         }
         if delivery_address.trim().is_empty() {
-            return Err(DomainError::Validation("delivery_address is required".into()));
+            return Err(DomainError::Validation(
+                "delivery_address is required".into(),
+            ));
         }
         if receiver_name.trim().is_empty() {
             return Err(DomainError::Validation("receiver_name is required".into()));
@@ -73,7 +77,9 @@ impl RunnerOrder {
             return Err(DomainError::Validation("receiver_phone is required".into()));
         }
         if service_fee < 0 {
-            return Err(DomainError::Validation("service_fee must be non-negative".into()));
+            return Err(DomainError::Validation(
+                "service_fee must be non-negative".into(),
+            ));
         }
 
         let now = Utc::now();
@@ -105,7 +111,9 @@ impl RunnerOrder {
 
     pub fn mark_paid(&mut self) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::PendingPay {
-            return Err(DomainError::InvalidState("only pending pay runner order can be paid".into()));
+            return Err(DomainError::InvalidState(
+                "only pending pay runner order can be paid".into(),
+            ));
         }
         let now = Utc::now();
         self.status = RunnerOrderStatus::PendingAccept;
@@ -117,7 +125,9 @@ impl RunnerOrder {
 
     pub fn cancel(&mut self, reason: Option<String>) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::PendingPay {
-            return Err(DomainError::InvalidState("only pending pay runner order can be canceled".into()));
+            return Err(DomainError::InvalidState(
+                "only pending pay runner order can be canceled".into(),
+            ));
         }
         let now = Utc::now();
         self.status = RunnerOrderStatus::Canceled;
@@ -129,7 +139,9 @@ impl RunnerOrder {
 
     pub fn admin_accept(&mut self) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::PendingAccept {
-            return Err(DomainError::InvalidState("only pending accept runner order can be accepted".into()));
+            return Err(DomainError::InvalidState(
+                "only pending accept runner order can be accepted".into(),
+            ));
         }
         let now = Utc::now();
         self.status = RunnerOrderStatus::Processing;
@@ -140,7 +152,9 @@ impl RunnerOrder {
 
     pub fn admin_delivered(&mut self) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::Processing {
-            return Err(DomainError::InvalidState("only processing runner order can be delivered".into()));
+            return Err(DomainError::InvalidState(
+                "only processing runner order can be delivered".into(),
+            ));
         }
         let now = Utc::now();
         self.status = RunnerOrderStatus::Delivered;
@@ -151,7 +165,9 @@ impl RunnerOrder {
 
     pub fn admin_complete(&mut self) -> Result<(), DomainError> {
         if self.status != RunnerOrderStatus::Delivered {
-            return Err(DomainError::InvalidState("only delivered runner order can be completed".into()));
+            return Err(DomainError::InvalidState(
+                "only delivered runner order can be completed".into(),
+            ));
         }
         let now = Utc::now();
         self.status = RunnerOrderStatus::Completed;

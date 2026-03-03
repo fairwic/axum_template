@@ -12,6 +12,7 @@ axum-application.workspace = true
 axum-infrastructure.workspace = true
 axum-api.workspace = true
 axum-common.workspace = true
+axum-domain.workspace = true
 axum.workspace = true
 tokio.workspace = true
 tracing.workspace = true

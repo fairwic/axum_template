@@ -1,9 +1,9 @@
 //! Postgres implementation for GoodsOrderRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::GoodsOrder;
-use async_trait::async_trait;
 use sqlx::PgPool;
 use ulid::Ulid;
 

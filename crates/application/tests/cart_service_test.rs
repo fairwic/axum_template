@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_application::CartService;
 use axum_common::AppResult;
 use axum_domain::cart::entity::Cart;
 use axum_domain::cart::repo::CartRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 
@@ -85,7 +85,10 @@ async fn test_cart_add_update_remove() {
     let cart = service.get_cart(user_id, store_id).await.unwrap();
     assert_eq!(cart.items[0].qty, 2);
 
-    service.remove_item(user_id, store_id, product_id).await.unwrap();
+    service
+        .remove_item(user_id, store_id, product_id)
+        .await
+        .unwrap();
     let cart = service.get_cart(user_id, store_id).await.unwrap();
     assert_eq!(cart.items.len(), 0);
 }

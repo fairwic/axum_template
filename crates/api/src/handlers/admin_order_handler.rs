@@ -4,8 +4,8 @@ use axum::extract::{Path, Query, State};
 use axum_application::OrderService;
 use axum_common::{ApiResponse, AppError, AppResult};
 use serde::Deserialize;
-use utoipa::ToSchema;
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use crate::handlers::order_handler::OrderResponse;
 use crate::state::AppState;

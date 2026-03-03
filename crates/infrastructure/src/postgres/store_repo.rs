@@ -1,9 +1,9 @@
 //! Postgres implementation for StoreRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::Store;
-use async_trait::async_trait;
 use sqlx::PgPool;
 
 use crate::models::store_model::StoreModel;

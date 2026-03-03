@@ -30,6 +30,7 @@ sqlx = { version = "0.8", features = [
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 # Auth
 jsonwebtoken = "9"
@@ -53,6 +54,7 @@ config = "0.14"
 
 # Async Trait
 async-trait = "0.1"
+rand = "0.8"
 
 # Password Hashing
 bcrypt = "0.15"

@@ -10,6 +10,10 @@ pub struct AppConfig {
     pub redis: RedisConfig,
     pub cache: CacheConfig,
     pub auth: AuthConfig,
+    #[serde(default)]
+    pub wechat: WechatConfig,
+    #[serde(default)]
+    pub sms: SmsConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -53,6 +57,43 @@ pub struct AuthConfig {
     pub jwt_ttl_secs: u64,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct WechatConfig {
+    #[serde(default)]
+    pub app_id: String,
+    #[serde(default)]
+    pub app_secret: String,
+    #[serde(default = "default_wechat_api_base")]
+    pub api_base: String,
+    #[serde(default = "default_wechat_timeout_secs")]
+    pub timeout_secs: u64,
+}
+
+impl Default for WechatConfig {
+    fn default() -> Self {
+        Self {
+            app_id: String::new(),
+            app_secret: String::new(),
+            api_base: default_wechat_api_base(),
+            timeout_secs: default_wechat_timeout_secs(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SmsConfig {
+    #[serde(default = "default_sms_login_code_ttl_secs")]
+    pub login_code_ttl_secs: u64,
+}
+
+impl Default for SmsConfig {
+    fn default() -> Self {
+        Self {
+            login_code_ttl_secs: default_sms_login_code_ttl_secs(),
+        }
+    }
+}
+
 fn default_max_connections() -> u32 {
     20
 }
@@ -76,6 +117,15 @@ fn default_cache_ttl_secs() -> u64 {
 }
 fn default_jwt_ttl_secs() -> u64 {
     7 * 24 * 3600
+}
+fn default_wechat_api_base() -> String {
+    "https://api.weixin.qq.com".into()
+}
+fn default_wechat_timeout_secs() -> u64 {
+    3
+}
+fn default_sms_login_code_ttl_secs() -> u64 {
+    300
 }
 
 impl DatabaseConfig {

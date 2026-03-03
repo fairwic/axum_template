@@ -1,8 +1,8 @@
 //! Product repository trait
 
 use crate::product::entity::Product;
-use axum_common::{AppError, AppResult};
 use async_trait::async_trait;
+use axum_common::{AppError, AppResult};
 use ulid::Ulid;
 
 #[async_trait]

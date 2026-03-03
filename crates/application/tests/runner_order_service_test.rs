@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_application::{CreateRunnerOrderInput, RunnerOrderService};
 use axum_common::AppResult;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 use axum_domain::runner_order::repo::RunnerOrderRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 

@@ -8,10 +8,7 @@ pub struct Claims {
     pub exp: usize,
 }
 
-pub fn encode_token(
-    claims: &Claims,
-    secret: &str,
-) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn encode_token(claims: &Claims, secret: &str) -> Result<String, jsonwebtoken::errors::Error> {
     encode(
         &Header::default(),
         claims,

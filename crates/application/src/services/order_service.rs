@@ -1,7 +1,7 @@
 //! Goods order service
 
-use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use axum_common::{AppError, AppResult};
 use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem};
@@ -32,7 +32,10 @@ pub struct OrderService {
 }
 
 impl OrderService {
-    pub fn new(repo: Arc<dyn GoodsOrderRepository>, product_repo: Arc<dyn ProductRepository>) -> Self {
+    pub fn new(
+        repo: Arc<dyn GoodsOrderRepository>,
+        product_repo: Arc<dyn ProductRepository>,
+    ) -> Self {
         Self { repo, product_repo }
     }
 
@@ -88,7 +91,9 @@ impl OrderService {
         order.cancel(reason)?;
         let updated = self.repo.update(&order).await?;
         for item in &updated.items {
-            self.product_repo.release_stock(item.product_id, item.qty).await?;
+            self.product_repo
+                .release_stock(item.product_id, item.qty)
+                .await?;
         }
         Ok(updated)
     }
@@ -161,10 +166,8 @@ impl OrderService {
             return Err(AppError::Validation("商品不存在或已下架".into()));
         }
 
-        let product_map: HashMap<Ulid, axum_domain::Product> = products
-            .into_iter()
-            .map(|item| (item.id, item))
-            .collect();
+        let product_map: HashMap<Ulid, axum_domain::Product> =
+            products.into_iter().map(|item| (item.id, item)).collect();
 
         let mut checked = Vec::with_capacity(items.len());
         for item in items {

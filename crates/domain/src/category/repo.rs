@@ -1,8 +1,8 @@
 //! Category repository trait
 
 use crate::category::entity::Category;
-use axum_common::AppResult;
 use async_trait::async_trait;
+use axum_common::AppResult;
 use ulid::Ulid;
 
 #[async_trait]

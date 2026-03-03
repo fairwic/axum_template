@@ -7,7 +7,21 @@ use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct WechatLoginDto {
-    pub openid: String,
+    pub code: String,
+    pub nickname: Option<String>,
+    pub avatar: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SendSmsCodeDto {
+    pub phone: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PhoneSmsLoginDto {
+    pub phone: String,
+    pub sms_code: String,
+    pub wechat_code: String,
     pub nickname: Option<String>,
     pub avatar: Option<String>,
 }

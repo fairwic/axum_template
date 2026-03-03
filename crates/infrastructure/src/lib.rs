@@ -30,7 +30,19 @@ pub mod redis {
     pub mod cache;
 }
 
+pub mod memory {
+    pub mod cache;
+}
+
+pub mod external {
+    pub mod sms_gateway;
+    pub mod wechat_auth_client;
+}
+
 pub use config::AppConfig;
+pub use external::sms_gateway::LogSmsGateway;
+pub use external::wechat_auth_client::WechatMiniProgramClient;
+pub use memory::cache::MemoryCacheService;
 pub use postgres::admin_repo::PgAdminRepository;
 pub use postgres::cart_repo::PgCartRepository;
 pub use postgres::category_repo::PgCategoryRepository;

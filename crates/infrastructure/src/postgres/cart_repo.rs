@@ -1,9 +1,9 @@
 //! Postgres implementation for CartRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::cart::repo::CartRepository;
 use axum_domain::Cart;
-use async_trait::async_trait;
 use chrono::Utc;
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -82,7 +82,7 @@ impl CartRepository for PgCartRepository {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(row.into_entity(vec![])? )
+        Ok(row.into_entity(vec![])?)
     }
 
     async fn upsert_item(
@@ -132,12 +132,9 @@ impl CartRepository for PgCartRepository {
         let Some(cart_id) = self.find_cart_id(user_id, store_id).await? else {
             return Ok(());
         };
-        sqlx::query!(
-            r#"DELETE FROM cart_items WHERE cart_id = $1"#,
-            cart_id
-        )
-        .execute(&self.pool)
-        .await?;
+        sqlx::query!(r#"DELETE FROM cart_items WHERE cart_id = $1"#, cart_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 }

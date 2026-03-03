@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_application::{CreateGoodsOrderInput, OrderService};
 use axum_common::AppResult;
 use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus};
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::{Product, ProductStatus};
 use axum_domain::product::repo::ProductRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 

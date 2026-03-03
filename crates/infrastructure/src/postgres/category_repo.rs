@@ -1,9 +1,9 @@
 //! Postgres implementation for CategoryRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::Category;
-use async_trait::async_trait;
 use sqlx::PgPool;
 use ulid::Ulid;
 

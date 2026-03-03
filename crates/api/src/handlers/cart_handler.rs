@@ -1,10 +1,14 @@
 //! Cart handlers
 
-use axum::{extract::{Query, State}, http::HeaderMap, Json};
+use axum::{
+    extract::{Query, State},
+    http::HeaderMap,
+    Json,
+};
 use axum_common::{ApiResponse, AppError, AppResult};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use axum_domain::Cart;
 
@@ -58,8 +62,7 @@ pub struct CartResponse {
 }
 
 fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
-    Ulid::from_string(value)
-        .map_err(|_| AppError::Validation(format!("invalid {}", field)))
+    Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
 }
 
 fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
@@ -131,7 +134,13 @@ pub async fn add_item(
 
     state
         .cart_service
-        .add_item(user_id, store_id, product_id, payload.qty, payload.price_snapshot)
+        .add_item(
+            user_id,
+            store_id,
+            product_id,
+            payload.qty,
+            payload.price_snapshot,
+        )
         .await?;
     let cart = state.cart_service.get_cart(user_id, store_id).await?;
     Ok(ApiResponse::success(to_response(cart)))
@@ -163,7 +172,13 @@ pub async fn update_qty(
 
     state
         .cart_service
-        .add_item(user_id, store_id, product_id, payload.qty, item.price_snapshot)
+        .add_item(
+            user_id,
+            store_id,
+            product_id,
+            payload.qty,
+            item.price_snapshot,
+        )
         .await?;
     let cart = state.cart_service.get_cart(user_id, store_id).await?;
     Ok(ApiResponse::success(to_response(cart)))

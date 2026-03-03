@@ -1,8 +1,8 @@
 //! Goods order repository trait
 
 use crate::order::entity::GoodsOrder;
-use axum_common::AppResult;
 use async_trait::async_trait;
+use axum_common::AppResult;
 use ulid::Ulid;
 
 #[async_trait]

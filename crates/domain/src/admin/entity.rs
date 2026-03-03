@@ -53,7 +53,9 @@ impl Admin {
 
     fn validate_role_store(role: &AdminRole, store_id: &Option<Ulid>) -> Result<(), DomainError> {
         if matches!(role, AdminRole::Store) && store_id.is_none() {
-            return Err(DomainError::Validation("store_id is required for store admin".into()));
+            return Err(DomainError::Validation(
+                "store_id is required for store admin".into(),
+            ));
         }
         Ok(())
     }

@@ -65,7 +65,6 @@ pub enum AppError {
     #[error("序列化错误: {0}")]
     Serialization(#[from] serde_json::Error),
 
-
     #[error("内部错误: {0}")]
     Internal(String),
 }
@@ -98,7 +97,9 @@ impl IntoResponse for AppError {
                     "CONCURRENCY_CONFLICT",
                     "数据已被修改，请刷新后重试",
                 ),
-                DomainError::InfrastructureError(msg) => (StatusCode::OK, "INFRASTRUCTURE_ERROR", msg.as_str()),
+                DomainError::InfrastructureError(msg) => {
+                    (StatusCode::OK, "INFRASTRUCTURE_ERROR", msg.as_str())
+                }
             },
             // 内部错误不暴露详情给客户端
             Self::Database(_) | Self::Internal(_) | Self::Serialization(_) => (

@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{body::{to_bytes, Body}, http::Request};
+use async_trait::async_trait;
+use axum::{
+    body::{to_bytes, Body},
+    http::Request,
+};
 use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, OrderService, ProductService, RunnerOrderService,
@@ -22,7 +26,6 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::{GoodsOrder, RunnerOrder, User};
-use async_trait::async_trait;
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -362,8 +365,12 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
         CartService::new(cart_repo),
         "secret".into(),
         3600,
+        300,
     )
-    .with_order_services(OrderService::new(order_repo, product_repo), RunnerOrderService::new(runner_repo));
+    .with_order_services(
+        OrderService::new(order_repo, product_repo),
+        RunnerOrderService::new(runner_repo),
+    );
 
     create_router(state)
 }
@@ -396,11 +403,16 @@ async fn test_goods_order_and_runner_order_flow() {
         .body(Body::from(create_order_payload.to_string()))
         .unwrap();
     let create_order_res = app.clone().oneshot(create_order_req).await.unwrap();
-    let create_order_body = to_bytes(create_order_res.into_body(), 1024 * 1024).await.unwrap();
+    let create_order_body = to_bytes(create_order_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
     let create_order_value: Value = serde_json::from_slice(&create_order_body).unwrap();
     assert_eq!(create_order_value["success"], true);
 
-    let order_id = create_order_value["data"]["order_id"].as_str().unwrap().to_string();
+    let order_id = create_order_value["data"]["order_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
     let pay_order_req = Request::builder()
         .method("POST")
         .uri("/api/v1/orders/pay")
@@ -409,7 +421,9 @@ async fn test_goods_order_and_runner_order_flow() {
         .body(Body::from(json!({"order_id": order_id}).to_string()))
         .unwrap();
     let pay_order_res = app.clone().oneshot(pay_order_req).await.unwrap();
-    let pay_order_body = to_bytes(pay_order_res.into_body(), 1024 * 1024).await.unwrap();
+    let pay_order_body = to_bytes(pay_order_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
     let pay_order_value: Value = serde_json::from_slice(&pay_order_body).unwrap();
     assert_eq!(pay_order_value["success"], true);
     assert_eq!(pay_order_value["data"]["status"], "PENDING_ACCEPT");
@@ -420,7 +434,9 @@ async fn test_goods_order_and_runner_order_flow() {
         .body(Body::empty())
         .unwrap();
     let admin_accept_res = app.clone().oneshot(admin_accept_req).await.unwrap();
-    let admin_accept_body = to_bytes(admin_accept_res.into_body(), 1024 * 1024).await.unwrap();
+    let admin_accept_body = to_bytes(admin_accept_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
     let admin_accept_value: Value = serde_json::from_slice(&admin_accept_body).unwrap();
     assert_eq!(admin_accept_value["success"], true);
     assert_eq!(admin_accept_value["data"]["status"], "ACCEPTED");
@@ -442,7 +458,9 @@ async fn test_goods_order_and_runner_order_flow() {
         .body(Body::from(create_runner_payload.to_string()))
         .unwrap();
     let create_runner_res = app.clone().oneshot(create_runner_req).await.unwrap();
-    let create_runner_body = to_bytes(create_runner_res.into_body(), 1024 * 1024).await.unwrap();
+    let create_runner_body = to_bytes(create_runner_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
     let create_runner_value: Value = serde_json::from_slice(&create_runner_body).unwrap();
     assert_eq!(create_runner_value["success"], true);
 
@@ -461,7 +479,9 @@ async fn test_goods_order_and_runner_order_flow() {
         ))
         .unwrap();
     let pay_runner_res = app.clone().oneshot(pay_runner_req).await.unwrap();
-    let pay_runner_body = to_bytes(pay_runner_res.into_body(), 1024 * 1024).await.unwrap();
+    let pay_runner_body = to_bytes(pay_runner_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
     let pay_runner_value: Value = serde_json::from_slice(&pay_runner_body).unwrap();
     assert_eq!(pay_runner_value["success"], true);
     assert_eq!(pay_runner_value["data"]["status"], "PENDING_ACCEPT");
@@ -475,9 +495,11 @@ async fn test_goods_order_and_runner_order_flow() {
         .body(Body::empty())
         .unwrap();
     let admin_accept_runner_res = app.oneshot(admin_accept_runner_req).await.unwrap();
-    let admin_accept_runner_body =
-        to_bytes(admin_accept_runner_res.into_body(), 1024 * 1024).await.unwrap();
-    let admin_accept_runner_value: Value = serde_json::from_slice(&admin_accept_runner_body).unwrap();
+    let admin_accept_runner_body = to_bytes(admin_accept_runner_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let admin_accept_runner_value: Value =
+        serde_json::from_slice(&admin_accept_runner_body).unwrap();
     assert_eq!(admin_accept_runner_value["success"], true);
     assert_eq!(admin_accept_runner_value["data"]["status"], "PROCESSING");
 }

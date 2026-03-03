@@ -1,9 +1,9 @@
 //! Postgres implementation for ProductRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::product::repo::ProductRepository;
 use axum_domain::Product;
-use async_trait::async_trait;
 use sqlx::PgPool;
 use ulid::Ulid;
 

@@ -1,12 +1,18 @@
 //! Goods order handlers
 
-use axum::{extract::{Path, Query, State}, http::HeaderMap, Json};
+use axum::{
+    extract::{Path, Query, State},
+    http::HeaderMap,
+    Json,
+};
 use axum_application::{CreateGoodsOrderInput, OrderService};
 use axum_common::{ApiResponse, AppError, AppResult};
-use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus};
+use axum_domain::order::entity::{
+    DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus,
+};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use crate::state::AppState;
 
@@ -90,7 +96,9 @@ fn parse_delivery_type(value: &str) -> AppResult<DeliveryType> {
     match value {
         "DELIVERY" => Ok(DeliveryType::Delivery),
         "PICKUP" => Ok(DeliveryType::Pickup),
-        _ => Err(AppError::Validation("delivery_type must be DELIVERY/PICKUP".into())),
+        _ => Err(AppError::Validation(
+            "delivery_type must be DELIVERY/PICKUP".into(),
+        )),
     }
 }
 
@@ -238,7 +246,9 @@ pub async fn list_orders(
     if let Some(status) = query.status {
         orders.retain(|item| status_to_string(&item.status) == status);
     }
-    Ok(ApiResponse::success(orders.into_iter().map(to_response).collect()))
+    Ok(ApiResponse::success(
+        orders.into_iter().map(to_response).collect(),
+    ))
 }
 
 #[utoipa::path(

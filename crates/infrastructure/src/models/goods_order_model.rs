@@ -133,7 +133,9 @@ fn string_to_delivery_type(value: &str) -> Result<DeliveryType, AppError> {
     match value {
         "DELIVERY" => Ok(DeliveryType::Delivery),
         "PICKUP" => Ok(DeliveryType::Pickup),
-        _ => Err(AppError::Internal("invalid goods order delivery_type".into())),
+        _ => Err(AppError::Internal(
+            "invalid goods order delivery_type".into(),
+        )),
     }
 }
 

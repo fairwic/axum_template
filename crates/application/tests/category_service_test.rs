@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_application::CategoryService;
 use axum_common::AppResult;
 use axum_domain::category::entity::{Category, CategoryStatus};
 use axum_domain::category::repo::CategoryRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 

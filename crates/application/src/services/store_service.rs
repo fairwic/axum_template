@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
-use async_trait::async_trait;
 
 #[async_trait]
 pub trait LbsService: Send + Sync {

@@ -1,8 +1,8 @@
 //! Runner order repository trait
 
 use crate::runner_order::entity::RunnerOrder;
-use axum_common::AppResult;
 use async_trait::async_trait;
+use axum_common::AppResult;
 use ulid::Ulid;
 
 #[async_trait]

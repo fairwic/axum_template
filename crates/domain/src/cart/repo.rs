@@ -1,8 +1,8 @@
 //! Cart repository trait
 
 use crate::cart::entity::Cart;
-use axum_common::AppResult;
 use async_trait::async_trait;
+use axum_common::AppResult;
 use ulid::Ulid;
 
 #[async_trait]

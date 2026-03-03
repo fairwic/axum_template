@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{body::{Body, to_bytes}, http::Request};
+use async_trait::async_trait;
+use axum::{
+    body::{to_bytes, Body},
+    http::Request,
+};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, CartService, CategoryService, ProductService, StoreService, UserService};
+use axum_application::{
+    AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
+};
 use axum_common::AppResult;
 use axum_domain::admin::entity::{Admin, AdminRole};
 use axum_domain::admin::repo::AdminRepository;
@@ -17,7 +23,6 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
-use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -202,7 +207,12 @@ async fn test_admin_login_returns_token() {
     let cart_service = CartService::new(cart_repo);
 
     admin_service
-        .create_admin("13800000000".into(), "pass".into(), AdminRole::Platform, None)
+        .create_admin(
+            "13800000000".into(),
+            "pass".into(),
+            AdminRole::Platform,
+            None,
+        )
         .await
         .unwrap();
 
@@ -215,6 +225,7 @@ async fn test_admin_login_returns_token() {
         cart_service,
         "secret".into(),
         3600,
+        300,
     );
     let app = create_router(state);
 

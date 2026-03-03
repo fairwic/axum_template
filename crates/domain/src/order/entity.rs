@@ -82,10 +82,14 @@ impl GoodsOrder {
 
         for item in &items {
             if item.qty <= 0 {
-                return Err(DomainError::Validation("item qty must be greater than 0".into()));
+                return Err(DomainError::Validation(
+                    "item qty must be greater than 0".into(),
+                ));
             }
             if item.price_snapshot < 0 {
-                return Err(DomainError::Validation("item price must be non-negative".into()));
+                return Err(DomainError::Validation(
+                    "item price must be non-negative".into(),
+                ));
             }
             if item.title_snapshot.trim().is_empty() {
                 return Err(DomainError::Validation("item title required".into()));
@@ -93,21 +97,29 @@ impl GoodsOrder {
         }
 
         if delivery_fee < 0 {
-            return Err(DomainError::Validation("delivery fee must be non-negative".into()));
+            return Err(DomainError::Validation(
+                "delivery fee must be non-negative".into(),
+            ));
         }
 
         match delivery_type {
             DeliveryType::Delivery => {
                 if address_snapshot.is_none() {
-                    return Err(DomainError::Validation("address snapshot required for delivery".into()));
+                    return Err(DomainError::Validation(
+                        "address snapshot required for delivery".into(),
+                    ));
                 }
                 if distance_km.is_none() {
-                    return Err(DomainError::Validation("distance_km required for delivery".into()));
+                    return Err(DomainError::Validation(
+                        "distance_km required for delivery".into(),
+                    ));
                 }
             }
             DeliveryType::Pickup => {
                 if store_snapshot.is_none() {
-                    return Err(DomainError::Validation("store snapshot required for pickup".into()));
+                    return Err(DomainError::Validation(
+                        "store snapshot required for pickup".into(),
+                    ));
                 }
             }
         }
@@ -147,7 +159,9 @@ impl GoodsOrder {
 
     pub fn mark_paid(&mut self) -> Result<(), DomainError> {
         if self.status != GoodsOrderStatus::PendingPay {
-            return Err(DomainError::InvalidState("only pending pay order can be paid".into()));
+            return Err(DomainError::InvalidState(
+                "only pending pay order can be paid".into(),
+            ));
         }
         let now = Utc::now();
         self.status = GoodsOrderStatus::PendingAccept;
@@ -159,7 +173,9 @@ impl GoodsOrder {
 
     pub fn cancel(&mut self, reason: Option<String>) -> Result<(), DomainError> {
         if self.status != GoodsOrderStatus::PendingPay {
-            return Err(DomainError::InvalidState("only pending pay order can be canceled".into()));
+            return Err(DomainError::InvalidState(
+                "only pending pay order can be canceled".into(),
+            ));
         }
         let now = Utc::now();
         self.status = GoodsOrderStatus::Canceled;
@@ -171,7 +187,9 @@ impl GoodsOrder {
 
     pub fn admin_accept(&mut self) -> Result<(), DomainError> {
         if self.status != GoodsOrderStatus::PendingAccept {
-            return Err(DomainError::InvalidState("only pending accept order can be accepted".into()));
+            return Err(DomainError::InvalidState(
+                "only pending accept order can be accepted".into(),
+            ));
         }
         let now = Utc::now();
         self.status = GoodsOrderStatus::Accepted;
@@ -182,7 +200,9 @@ impl GoodsOrder {
 
     pub fn admin_dispatch(&mut self) -> Result<(), DomainError> {
         if self.status != GoodsOrderStatus::Accepted {
-            return Err(DomainError::InvalidState("only accepted order can be dispatched".into()));
+            return Err(DomainError::InvalidState(
+                "only accepted order can be dispatched".into(),
+            ));
         }
         let now = Utc::now();
         self.status = match self.delivery_type {
@@ -194,8 +214,12 @@ impl GoodsOrder {
     }
 
     pub fn admin_complete(&mut self) -> Result<(), DomainError> {
-        if self.status != GoodsOrderStatus::Delivering && self.status != GoodsOrderStatus::WaitingPickup {
-            return Err(DomainError::InvalidState("only delivering/waiting pickup order can be completed".into()));
+        if self.status != GoodsOrderStatus::Delivering
+            && self.status != GoodsOrderStatus::WaitingPickup
+        {
+            return Err(DomainError::InvalidState(
+                "only delivering/waiting pickup order can be completed".into(),
+            ));
         }
         let now = Utc::now();
         self.status = GoodsOrderStatus::Completed;

@@ -20,3 +20,12 @@ default_ttl_secs = 300
 [auth]
 jwt_secret = "dev-secret"
 jwt_ttl_secs = 604800
+
+[wechat]
+app_id = ""
+app_secret = ""
+api_base = "https://api.weixin.qq.com"
+timeout_secs = 3
+
+[sms]
+login_code_ttl_secs = 300

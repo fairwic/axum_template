@@ -3,8 +3,8 @@
 use axum::extract::{Query, State};
 use axum_common::{ApiResponse, AppError, AppResult, PagedResponse};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use axum_domain::product::entity::{Product, ProductStatus};
 

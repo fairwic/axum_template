@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum::{body::{Body, to_bytes}, http::Request};
+use async_trait::async_trait;
+use axum::{
+    body::{to_bytes, Body},
+    http::Request,
+};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, CartService, CategoryService, ProductService, StoreService, UserService};
+use axum_application::{
+    AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
+};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
@@ -17,7 +23,6 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
-use async_trait::async_trait;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -258,6 +263,7 @@ async fn test_products_list_and_search() {
         cart_service,
         "secret".into(),
         3600,
+        300,
     );
     let app = create_router(state);
 

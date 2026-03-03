@@ -25,8 +25,8 @@ impl AdminService {
         role: AdminRole,
         store_id: Option<Ulid>,
     ) -> AppResult<Admin> {
-        let password_hash = hash(password, DEFAULT_COST)
-            .map_err(|err| AppError::Internal(err.to_string()))?;
+        let password_hash =
+            hash(password, DEFAULT_COST).map_err(|err| AppError::Internal(err.to_string()))?;
         let admin = Admin::new(phone, password_hash, role, store_id)?;
         self.repo.create(&admin).await
     }

@@ -1,11 +1,13 @@
 use utoipa::OpenApi;
 
 use crate::handlers::{
-    admin_auth_handler, admin_order_handler, admin_runner_order_handler, auth_handler, cart_handler,
-    category_handler, member_handler, order_handler, product_handler, runner_order_handler,
-    store_handler,
+    admin_auth_handler, admin_order_handler, admin_runner_order_handler, auth_handler,
+    cart_handler, category_handler, member_handler, order_handler, product_handler,
+    runner_order_handler, store_handler,
 };
-use axum_application::dtos::user_dto::{UserResponse, WechatLoginDto};
+use axum_application::dtos::user_dto::{
+    PhoneSmsLoginDto, SendSmsCodeDto, UserResponse, WechatLoginDto,
+};
 use axum_common::response::{self, PagedResponse};
 
 #[derive(OpenApi)]
@@ -17,6 +19,8 @@ use axum_common::response::{self, PagedResponse};
     ),
     paths(
         auth_handler::wechat_login,
+        auth_handler::send_sms_code,
+        auth_handler::phone_sms_login,
         admin_auth_handler::admin_login,
         member_handler::member_status,
         member_handler::member_benefits,
@@ -51,8 +55,11 @@ use axum_common::response::{self, PagedResponse};
     components(
         schemas(
             WechatLoginDto,
+            SendSmsCodeDto,
+            PhoneSmsLoginDto,
             UserResponse,
             auth_handler::LoginResponse,
+            auth_handler::SendSmsCodeResponse,
             admin_auth_handler::AdminLoginDto,
             admin_auth_handler::AdminResponse,
             admin_auth_handler::AdminLoginResponse,
@@ -80,6 +87,7 @@ use axum_common::response::{self, PagedResponse};
             category_handler::CategoryResponse,
             product_handler::ProductResponse,
             response::ApiResponse<auth_handler::LoginResponse>,
+            response::ApiResponse<auth_handler::SendSmsCodeResponse>,
             response::ApiResponse<admin_auth_handler::AdminLoginResponse>,
             response::ApiResponse<member_handler::MemberStatusResponse>,
             response::ApiResponse<member_handler::MemberBenefitsResponse>,

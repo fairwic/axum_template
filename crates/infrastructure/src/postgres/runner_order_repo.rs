@@ -1,9 +1,9 @@
 //! Postgres implementation for RunnerOrderRepository
 
+use async_trait::async_trait;
 use axum_common::AppResult;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
 use axum_domain::RunnerOrder;
-use async_trait::async_trait;
 use sqlx::PgPool;
 use ulid::Ulid;
 

@@ -19,8 +19,7 @@ pub struct MemberBenefitsResponse {
     responses((status = 200, description = "Member status", body = ApiResponse<MemberStatusResponse>)),
     tag = "Member"
 )]
-pub async fn member_status(
-) -> AppResult<ApiResponse<MemberStatusResponse>> {
+pub async fn member_status() -> AppResult<ApiResponse<MemberStatusResponse>> {
     let is_member = true;
     Ok(ApiResponse::success(MemberStatusResponse { is_member }))
 }
@@ -32,9 +31,6 @@ pub async fn member_status(
     tag = "Member"
 )]
 pub async fn member_benefits() -> AppResult<ApiResponse<MemberBenefitsResponse>> {
-    let benefits = vec![
-        "3km 内免配送费".to_string(),
-        "专属券入口".to_string(),
-    ];
+    let benefits = vec!["3km 内免配送费".to_string(), "专属券入口".to_string()];
     Ok(ApiResponse::success(MemberBenefitsResponse { benefits }))
 }

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use axum_application::StoreService;
+use async_trait::async_trait;
 use axum_application::services::store_service;
+use axum_application::StoreService;
 use axum_common::AppResult;
 use axum_domain::store::entity::{Store, StoreStatus};
 use axum_domain::store::repo::StoreRepository;
-use async_trait::async_trait;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 

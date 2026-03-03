@@ -1,13 +1,17 @@
 //! Runner order handlers
 
-use axum::{extract::{Path, Query, State}, http::HeaderMap, Json};
+use axum::{
+    extract::{Path, Query, State},
+    http::HeaderMap,
+    Json,
+};
 use axum_application::{CreateRunnerOrderInput, RunnerOrderService};
 use axum_common::{ApiResponse, AppError, AppResult};
 use axum_domain::order::entity::PayStatus;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use ulid::Ulid;
+use utoipa::ToSchema;
 
 use crate::state::AppState;
 
@@ -186,7 +190,9 @@ pub async fn list_runner_orders(
     if let Some(status) = query.status {
         orders.retain(|item| status_to_string(&item.status) == status);
     }
-    Ok(ApiResponse::success(orders.into_iter().map(to_response).collect()))
+    Ok(ApiResponse::success(
+        orders.into_iter().map(to_response).collect(),
+    ))
 }
 
 #[utoipa::path(

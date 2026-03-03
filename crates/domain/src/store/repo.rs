@@ -1,8 +1,8 @@
 //! Store repository trait
 
 use crate::store::entity::Store;
-use axum_common::AppResult;
 use async_trait::async_trait;
+use axum_common::AppResult;
 
 #[async_trait]
 pub trait StoreRepository: Send + Sync {
