@@ -1,0 +1,85 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO addresses (id, user_id, name, phone, detail, lat, lng, is_default, created_at, updated_at)\n            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)\n            RETURNING id, user_id, name, phone, detail, lat, lng, is_default, created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "detail",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "lat",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 6,
+        "name": "lng",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 7,
+        "name": "is_default",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Float8",
+        "Float8",
+        "Bool",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0e025b59952c7186e90d28a8fac392d782795ae6d4dd767079fbe0279d4bafcb"
+}

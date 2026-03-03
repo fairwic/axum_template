@@ -5,6 +5,7 @@ use axum_common::AppResult;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::Store;
 use sqlx::PgPool;
+use ulid::Ulid;
 
 use crate::models::store_model::StoreModel;
 
@@ -73,5 +74,23 @@ impl StoreRepository for PgStoreRepository {
         .await?;
 
         row.into_entity()
+    }
+
+    async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
+        let row = sqlx::query_as!(
+            StoreModel,
+            r#"
+            SELECT id, name, address, lat, lng, phone, business_hours, status,
+                   delivery_radius_km, delivery_fee_base, delivery_fee_per_km, runner_service_fee,
+                   created_at, updated_at
+            FROM stores
+            WHERE id = $1
+            "#,
+            store_id.to_string(),
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        row.map(StoreModel::into_entity).transpose()
     }
 }

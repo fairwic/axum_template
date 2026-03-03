@@ -8,10 +8,8 @@ use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem};
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::ProductStatus;
 use axum_domain::product::repo::ProductRepository;
+use axum_domain::store::repo::StoreRepository;
 use ulid::Ulid;
-
-const FREE_DELIVERY_RADIUS_KM: f64 = 3.0;
-const DELIVERY_FEE_PER_EXTRA_KM: i32 = 100;
 
 #[derive(Debug, Clone)]
 pub struct CreateGoodsOrderInput {
@@ -25,23 +23,46 @@ pub struct CreateGoodsOrderInput {
     pub remark: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct OrderPreview {
+    pub amount_goods: i32,
+    pub amount_delivery_fee: i32,
+    pub amount_discount: i32,
+    pub amount_payable: i32,
+    pub distance_km: Option<f64>,
+    pub deliverable: bool,
+}
+
 #[derive(Clone)]
 pub struct OrderService {
     repo: Arc<dyn GoodsOrderRepository>,
     product_repo: Arc<dyn ProductRepository>,
+    store_repo: Arc<dyn StoreRepository>,
 }
 
 impl OrderService {
     pub fn new(
         repo: Arc<dyn GoodsOrderRepository>,
         product_repo: Arc<dyn ProductRepository>,
+        store_repo: Arc<dyn StoreRepository>,
     ) -> Self {
-        Self { repo, product_repo }
+        Self {
+            repo,
+            product_repo,
+            store_repo,
+        }
     }
 
     pub async fn create(&self, input: CreateGoodsOrderInput) -> AppResult<GoodsOrder> {
         let checked_items = self.recheck_items(input.store_id, &input.items).await?;
-        let delivery_fee = calc_delivery_fee(&input.delivery_type, input.distance_km);
+        let preview = self
+            .preview_from_checked(
+                input.store_id,
+                input.delivery_type.clone(),
+                &checked_items,
+                input.distance_km,
+            )
+            .await?;
         let mut locked_items: Vec<(Ulid, i32)> = Vec::with_capacity(checked_items.len());
         for item in &checked_items {
             let locked = self
@@ -60,7 +81,7 @@ impl OrderService {
             input.store_id,
             input.delivery_type,
             checked_items,
-            delivery_fee,
+            preview.amount_delivery_fee,
             input.distance_km,
             input.address_snapshot,
             input.store_snapshot,
@@ -79,6 +100,18 @@ impl OrderService {
         let mut order = self.must_get_for_user(user_id, order_id).await?;
         order.mark_paid()?;
         self.repo.update(&order).await
+    }
+
+    pub async fn preview(
+        &self,
+        store_id: Ulid,
+        delivery_type: DeliveryType,
+        items: Vec<GoodsOrderItem>,
+        distance_km: Option<f64>,
+    ) -> AppResult<OrderPreview> {
+        let checked_items = self.recheck_items(store_id, &items).await?;
+        self.preview_from_checked(store_id, delivery_type, &checked_items, distance_km)
+            .await
     }
 
     pub async fn cancel(
@@ -203,18 +236,57 @@ impl OrderService {
             let _ = self.product_repo.release_stock(*product_id, *qty).await;
         }
     }
-}
 
-fn calc_delivery_fee(delivery_type: &DeliveryType, distance_km: Option<f64>) -> i32 {
-    if *delivery_type != DeliveryType::Delivery {
-        return 0;
+    async fn preview_from_checked(
+        &self,
+        store_id: Ulid,
+        delivery_type: DeliveryType,
+        items: &[GoodsOrderItem],
+        distance_km: Option<f64>,
+    ) -> AppResult<OrderPreview> {
+        let amount_goods = items
+            .iter()
+            .map(|item| item.price_snapshot * item.qty)
+            .sum::<i32>();
+        let amount_delivery_fee = self
+            .calc_delivery_fee(store_id, &delivery_type, distance_km)
+            .await?;
+        let amount_discount = 0;
+        let amount_payable = amount_goods + amount_delivery_fee - amount_discount;
+
+        Ok(OrderPreview {
+            amount_goods,
+            amount_delivery_fee,
+            amount_discount,
+            amount_payable,
+            distance_km,
+            deliverable: true,
+        })
     }
 
-    let distance_km = distance_km.unwrap_or(0.0);
-    if distance_km <= FREE_DELIVERY_RADIUS_KM {
-        return 0;
-    }
+    async fn calc_delivery_fee(
+        &self,
+        store_id: Ulid,
+        delivery_type: &DeliveryType,
+        distance_km: Option<f64>,
+    ) -> AppResult<i32> {
+        if *delivery_type != DeliveryType::Delivery {
+            return Ok(0);
+        }
 
-    let extra_km = (distance_km - FREE_DELIVERY_RADIUS_KM).ceil() as i32;
-    extra_km * DELIVERY_FEE_PER_EXTRA_KM
+        let distance_km = distance_km
+            .ok_or_else(|| AppError::Validation("distance_km required for delivery".into()))?;
+        let store = self
+            .store_repo
+            .find_by_id(store_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("store not found".into()))?;
+
+        if distance_km <= store.delivery_radius_km {
+            return Ok(0);
+        }
+
+        let extra_km = (distance_km - store.delivery_radius_km).ceil() as i32;
+        Ok(store.delivery_fee_base + extra_km * store.delivery_fee_per_km)
+    }
 }

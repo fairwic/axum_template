@@ -4,10 +4,14 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use axum_application::{CreateGoodsOrderInput, OrderService};
 use axum_common::AppResult;
-use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus};
+use axum_domain::order::entity::{
+    DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus,
+};
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::{Product, ProductStatus};
 use axum_domain::product::repo::ProductRepository;
+use axum_domain::store::entity::{Store, StoreStatus};
+use axum_domain::store::repo::StoreRepository;
 use tokio::sync::Mutex;
 use ulid::Ulid;
 
@@ -121,6 +125,30 @@ impl ProductRepository for InMemoryProductRepo {
     }
 }
 
+#[derive(Default)]
+struct InMemoryStoreRepo {
+    inner: Mutex<HashMap<Ulid, Store>>,
+}
+
+#[async_trait]
+impl StoreRepository for InMemoryStoreRepo {
+    async fn list(&self) -> AppResult<Vec<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.values().cloned().collect())
+    }
+
+    async fn create(&self, store: &Store) -> AppResult<Store> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(store.id, store.clone());
+        Ok(store.clone())
+    }
+
+    async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&store_id).cloned())
+    }
+}
+
 fn sample_item(product_id: Ulid) -> GoodsOrderItem {
     GoodsOrderItem {
         product_id,
@@ -130,14 +158,34 @@ fn sample_item(product_id: Ulid) -> GoodsOrderItem {
     }
 }
 
+fn sample_store() -> Store {
+    Store::new(
+        "店A".into(),
+        "A区".into(),
+        30.0,
+        120.0,
+        "13800000000".into(),
+        "9:00-22:00".into(),
+        StoreStatus::Open,
+        3.0,
+        100,
+        100,
+        200,
+    )
+    .unwrap()
+}
+
 #[tokio::test]
 async fn test_order_create_pay_cancel_flow() {
     let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
     let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
-    let service = OrderService::new(order_repo, product_repo.clone());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
 
     let user_id = Ulid::new();
-    let store_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
     let product = Product::new(
         store_id,
         Ulid::new(),
@@ -170,23 +218,27 @@ async fn test_order_create_pay_cancel_flow() {
 
     assert_eq!(order.status, GoodsOrderStatus::PendingPay);
     assert_eq!(order.amount_goods, 1980);
-    assert_eq!(order.amount_delivery_fee, 200);
+    assert_eq!(order.amount_delivery_fee, 300);
 
     let paid = service.pay(user_id, order.id).await.unwrap();
     assert_eq!(paid.status, GoodsOrderStatus::PendingAccept);
 
-    let cancel_result = service.cancel(user_id, order.id, None).await;
-    assert!(cancel_result.is_err());
+    let canceled = service.cancel(user_id, order.id, None).await.unwrap();
+    assert_eq!(canceled.status, GoodsOrderStatus::Canceled);
+    assert_eq!(canceled.pay_status, PayStatus::Refunded);
 }
 
 #[tokio::test]
 async fn test_order_admin_state_flow() {
     let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
     let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
-    let service = OrderService::new(order_repo, product_repo.clone());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
 
     let user_id = Ulid::new();
-    let store_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
     let product = Product::new(
         store_id,
         Ulid::new(),
@@ -231,10 +283,13 @@ async fn test_order_admin_state_flow() {
 async fn test_order_create_fails_on_insufficient_stock() {
     let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
     let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
-    let service = OrderService::new(order_repo, product_repo.clone());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
 
     let user_id = Ulid::new();
-    let store_id = Ulid::new();
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
     let product = Product::new(
         store_id,
         Ulid::new(),
@@ -270,4 +325,47 @@ async fn test_order_create_fails_on_insufficient_stock() {
         .await;
 
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn test_order_preview_returns_config_based_delivery_fee() {
+    let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let service = OrderService::new(order_repo, product_repo.clone(), store_repo.clone());
+
+    let store = sample_store();
+    let store_id = store.id;
+    store_repo.create(&store).await.unwrap();
+
+    let product = Product::new(
+        store_id,
+        Ulid::new(),
+        "椰子水".into(),
+        None,
+        "img".into(),
+        vec![],
+        990,
+        None,
+        10,
+        ProductStatus::On,
+        vec![],
+    )
+    .unwrap();
+    product_repo.create(&product).await.unwrap();
+
+    let preview = service
+        .preview(
+            store_id,
+            DeliveryType::Delivery,
+            vec![sample_item(product.id)],
+            Some(4.2),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(preview.amount_goods, 1980);
+    assert_eq!(preview.amount_delivery_fee, 300);
+    assert_eq!(preview.amount_payable, 2280);
+    assert!(preview.deliverable);
 }

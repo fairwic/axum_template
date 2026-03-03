@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use axum_application::{
-    AdminService, CartService, CategoryService, OrderService, ProductService, RunnerOrderService,
-    StoreService, UserService,
+    AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
+    RunnerOrderService, StoreService, UserService,
 };
 
 #[derive(Clone)]
@@ -13,6 +13,7 @@ pub struct AppState {
     pub category_service: Arc<CategoryService>,
     pub product_service: Arc<ProductService>,
     pub cart_service: Arc<CartService>,
+    pub address_service: Option<Arc<AddressService>>,
     pub order_service: Option<Arc<OrderService>>,
     pub runner_order_service: Option<Arc<RunnerOrderService>>,
     pub jwt_secret: String,
@@ -39,6 +40,7 @@ impl AppState {
             category_service: Arc::new(category_service),
             product_service: Arc::new(product_service),
             cart_service: Arc::new(cart_service),
+            address_service: None,
             order_service: None,
             runner_order_service: None,
             jwt_secret,
@@ -54,6 +56,11 @@ impl AppState {
     ) -> Self {
         self.order_service = Some(Arc::new(order_service));
         self.runner_order_service = Some(Arc::new(runner_order_service));
+        self
+    }
+
+    pub fn with_address_service(mut self, address_service: AddressService) -> Self {
+        self.address_service = Some(Arc::new(address_service));
         self
     }
 }

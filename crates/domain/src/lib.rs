@@ -2,6 +2,7 @@
 //!
 //! 领域层，仅保留最小 User 聚合示例。
 
+pub mod address;
 pub mod admin;
 pub mod auth;
 pub mod cache;
@@ -14,6 +15,8 @@ pub mod runner_order;
 pub mod store;
 pub mod user;
 
+pub use address::entity::Address;
+pub use address::repo::AddressRepository;
 pub use admin::entity::{Admin, AdminRole};
 pub use admin::repo::AdminRepository;
 pub use auth::{SmsGateway, WechatAuthClient, WechatSession};

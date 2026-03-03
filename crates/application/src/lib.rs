@@ -7,6 +7,7 @@ pub mod dtos {
 }
 
 pub mod services {
+    pub mod address_service;
     pub mod admin_service;
     pub mod cart_service;
     pub mod category_service;
@@ -17,10 +18,11 @@ pub mod services {
     pub mod user_service;
 }
 
+pub use services::address_service::{AddressService, CreateAddressInput, UpdateAddressInput};
 pub use services::admin_service::AdminService;
 pub use services::cart_service::CartService;
 pub use services::category_service::CategoryService;
-pub use services::order_service::{CreateGoodsOrderInput, OrderService};
+pub use services::order_service::{CreateGoodsOrderInput, OrderPreview, OrderService};
 pub use services::product_service::ProductService;
 pub use services::runner_order_service::{CreateRunnerOrderInput, RunnerOrderService};
 pub use services::store_service::StoreService;

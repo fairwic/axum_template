@@ -8,10 +8,12 @@ use axum::{
 };
 use axum_api::{create_router, AppState};
 use axum_application::{
-    AdminService, CartService, CategoryService, OrderService, ProductService, RunnerOrderService,
-    StoreService, UserService,
+    AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
+    RunnerOrderService, StoreService, UserService,
 };
 use axum_common::AppResult;
+use axum_domain::address::entity::Address;
+use axum_domain::address::repo::AddressRepository;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::cart::entity::Cart;
@@ -85,6 +87,11 @@ impl StoreRepository for InMemoryStoreRepo {
         let mut guard = self.inner.lock().await;
         guard.insert(store.id.to_string(), store.clone());
         Ok(store.clone())
+    }
+
+    async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&store_id.to_string()).cloned())
     }
 }
 
@@ -317,6 +324,55 @@ impl RunnerOrderRepository for InMemoryRunnerOrderRepo {
 }
 
 #[derive(Default)]
+struct InMemoryAddressRepo {
+    inner: Mutex<HashMap<Ulid, Address>>,
+}
+
+#[async_trait]
+impl AddressRepository for InMemoryAddressRepo {
+    async fn list_by_user(&self, user_id: Ulid) -> AppResult<Vec<Address>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .values()
+            .filter(|item| item.user_id == user_id)
+            .cloned()
+            .collect())
+    }
+
+    async fn find_by_id(&self, user_id: Ulid, address_id: Ulid) -> AppResult<Option<Address>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .get(&address_id)
+            .cloned()
+            .filter(|item| item.user_id == user_id))
+    }
+
+    async fn create(&self, address: &Address) -> AppResult<Address> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(address.id, address.clone());
+        Ok(address.clone())
+    }
+
+    async fn update(&self, address: &Address) -> AppResult<Address> {
+        let mut guard = self.inner.lock().await;
+        guard.insert(address.id, address.clone());
+        Ok(address.clone())
+    }
+
+    async fn delete(&self, user_id: Ulid, address_id: Ulid) -> AppResult<()> {
+        let mut guard = self.inner.lock().await;
+        if guard
+            .get(&address_id)
+            .map(|item| item.user_id == user_id)
+            .unwrap_or(false)
+        {
+            guard.remove(&address_id);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Default)]
 struct FakeLbs;
 
 #[async_trait]
@@ -336,6 +392,7 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
     let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
     let order_repo: Arc<dyn GoodsOrderRepository> = Arc::new(InMemoryOrderRepo::default());
     let runner_repo: Arc<dyn RunnerOrderRepository> = Arc::new(InMemoryRunnerOrderRepo::default());
+    let address_repo: Arc<dyn AddressRepository> = Arc::new(InMemoryAddressRepo::default());
 
     let mut seed_product = Product::new(
         store_id,
@@ -356,10 +413,32 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
     guard.insert(seed_product.id, seed_product.clone());
     drop(guard);
 
+    let seed_store = Store::new(
+        "店A".into(),
+        "A区".into(),
+        30.0,
+        120.0,
+        "13800000000".into(),
+        "9:00-22:00".into(),
+        axum_domain::store::entity::StoreStatus::Open,
+        3.0,
+        100,
+        100,
+        200,
+    )
+    .unwrap();
+    store_repo
+        .create(&Store {
+            id: store_id,
+            ..seed_store
+        })
+        .await
+        .unwrap();
+
     let state = AppState::new(
         UserService::new(user_repo),
         AdminService::new(admin_repo),
-        StoreService::new(store_repo, Arc::new(FakeLbs::default())),
+        StoreService::new(store_repo.clone(), Arc::new(FakeLbs::default())),
         CategoryService::new(category_repo),
         ProductService::new(product_repo.clone()),
         CartService::new(cart_repo),
@@ -367,8 +446,9 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
         3600,
         300,
     )
+    .with_address_service(AddressService::new(address_repo))
     .with_order_services(
-        OrderService::new(order_repo, product_repo),
+        OrderService::new(order_repo, product_repo, store_repo),
         RunnerOrderService::new(runner_repo),
     );
 
@@ -382,6 +462,62 @@ async fn test_goods_order_and_runner_order_flow() {
     let product_id = Ulid::new();
     let app = create_test_app(store_id, product_id).await;
 
+    let create_address_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/addresses")
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(
+            json!({
+                "name":"张三",
+                "phone":"13800000000",
+                "detail":"A101",
+                "lat":30.0,
+                "lng":120.0,
+                "is_default":true
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let create_address_res = app.clone().oneshot(create_address_req).await.unwrap();
+    let create_address_body = to_bytes(create_address_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let create_address_value: Value = serde_json::from_slice(&create_address_body).unwrap();
+    assert_eq!(create_address_value["success"], true);
+    let address_id = create_address_value["data"]["address_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let preview_order_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/orders/preview")
+        .header("content-type", "application/json")
+        .body(Body::from(
+            json!({
+                "store_id": store_id.to_string(),
+                "delivery_type": "DELIVERY",
+                "items": [{
+                    "product_id": product_id.to_string(),
+                    "title_snapshot": "椰子水",
+                    "price_snapshot": 990,
+                    "qty": 1
+                }],
+                "distance_km": 4.2
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let preview_order_res = app.clone().oneshot(preview_order_req).await.unwrap();
+    let preview_order_body = to_bytes(preview_order_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let preview_order_value: Value = serde_json::from_slice(&preview_order_body).unwrap();
+    assert_eq!(preview_order_value["success"], true);
+    assert_eq!(preview_order_value["data"]["amount_delivery_fee"], 300);
+    assert_eq!(preview_order_value["data"]["amount_payable"], 1290);
+
     let create_order_payload = json!({
         "store_id": store_id.to_string(),
         "delivery_type": "DELIVERY",
@@ -392,7 +528,7 @@ async fn test_goods_order_and_runner_order_flow() {
             "qty": 1
         }],
         "distance_km": 4.2,
-        "address_snapshot": {"detail": "A101"}
+        "address_id": address_id
     });
 
     let create_order_req = Request::builder()
@@ -428,9 +564,121 @@ async fn test_goods_order_and_runner_order_flow() {
     assert_eq!(pay_order_value["success"], true);
     assert_eq!(pay_order_value["data"]["status"], "PENDING_ACCEPT");
 
+    let cancel_paid_req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/orders/{}/cancel", order_id))
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(r#"{"reason":"不想要了"}"#))
+        .unwrap();
+    let cancel_paid_res = app.clone().oneshot(cancel_paid_req).await.unwrap();
+    let cancel_paid_body = to_bytes(cancel_paid_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let cancel_paid_value: Value = serde_json::from_slice(&cancel_paid_body).unwrap();
+    assert_eq!(cancel_paid_value["success"], true);
+    assert_eq!(cancel_paid_value["data"]["status"], "CANCELED");
+    assert_eq!(cancel_paid_value["data"]["pay_status"], "REFUNDED");
+
+    let create_order_unpaid_payload = json!({
+        "store_id": store_id.to_string(),
+        "delivery_type": "DELIVERY",
+        "items": [{
+            "product_id": product_id.to_string(),
+            "title_snapshot": "椰子水",
+            "price_snapshot": 990,
+            "qty": 1
+        }],
+        "distance_km": 2.0,
+        "address_id": address_id
+    });
+    let create_order_unpaid_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/orders/create")
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(create_order_unpaid_payload.to_string()))
+        .unwrap();
+    let create_order_unpaid_res = app.clone().oneshot(create_order_unpaid_req).await.unwrap();
+    let create_order_unpaid_body = to_bytes(create_order_unpaid_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let create_order_unpaid_value: Value =
+        serde_json::from_slice(&create_order_unpaid_body).unwrap();
+    assert_eq!(create_order_unpaid_value["success"], true);
+    let unpaid_order_id = create_order_unpaid_value["data"]["order_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let cancel_unpaid_req = Request::builder()
+        .method("POST")
+        .uri(format!("/api/v1/orders/{}/cancel", unpaid_order_id))
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(r#"{"reason":"重新下单"}"#))
+        .unwrap();
+    let cancel_unpaid_res = app.clone().oneshot(cancel_unpaid_req).await.unwrap();
+    let cancel_unpaid_body = to_bytes(cancel_unpaid_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let cancel_unpaid_value: Value = serde_json::from_slice(&cancel_unpaid_body).unwrap();
+    assert_eq!(cancel_unpaid_value["success"], true);
+    assert_eq!(cancel_unpaid_value["data"]["pay_status"], "UNPAID");
+
+    let create_order_admin_payload = json!({
+        "store_id": store_id.to_string(),
+        "delivery_type": "DELIVERY",
+        "items": [{
+            "product_id": product_id.to_string(),
+            "title_snapshot": "椰子水",
+            "price_snapshot": 990,
+            "qty": 1
+        }],
+        "distance_km": 2.2,
+        "address_id": address_id
+    });
+    let create_order_admin_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/orders/create")
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(create_order_admin_payload.to_string()))
+        .unwrap();
+    let create_order_admin_res = app.clone().oneshot(create_order_admin_req).await.unwrap();
+    let create_order_admin_body = to_bytes(create_order_admin_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let create_order_admin_value: Value = serde_json::from_slice(&create_order_admin_body).unwrap();
+    assert_eq!(create_order_admin_value["success"], true);
+    let order_id_for_admin = create_order_admin_value["data"]["order_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let pay_order_admin_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/orders/pay")
+        .header("content-type", "application/json")
+        .header("x-user-id", user_id.to_string())
+        .body(Body::from(
+            json!({"order_id": order_id_for_admin}).to_string(),
+        ))
+        .unwrap();
+    let pay_order_admin_res = app.clone().oneshot(pay_order_admin_req).await.unwrap();
+    let pay_order_admin_body = to_bytes(pay_order_admin_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let pay_order_admin_value: Value = serde_json::from_slice(&pay_order_admin_body).unwrap();
+    assert_eq!(pay_order_admin_value["success"], true);
+    assert_eq!(pay_order_admin_value["data"]["status"], "PENDING_ACCEPT");
+
     let admin_accept_req = Request::builder()
         .method("POST")
-        .uri(format!("/api/admin/v1/orders/{}/accept", order_id))
+        .uri(format!(
+            "/api/admin/v1/orders/{}/accept",
+            order_id_for_admin
+        ))
         .body(Body::empty())
         .unwrap();
     let admin_accept_res = app.clone().oneshot(admin_accept_req).await.unwrap();

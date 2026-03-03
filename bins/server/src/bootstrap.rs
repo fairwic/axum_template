@@ -6,14 +6,14 @@ use async_trait::async_trait;
 use axum_api::state::AppState;
 use axum_application::services::store_service::LbsService;
 use axum_application::{
-    AdminService, CartService, CategoryService, OrderService, ProductService, RunnerOrderService,
-    StoreService, UserService,
+    AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
+    RunnerOrderService, StoreService, UserService,
 };
 use axum_domain::{CacheService, SmsGateway, WechatAuthClient};
 use axum_infrastructure::{
-    AppConfig, LogSmsGateway, MemoryCacheService, PgAdminRepository, PgCartRepository,
-    PgCategoryRepository, PgGoodsOrderRepository, PgProductRepository, PgRunnerOrderRepository,
-    PgStoreRepository, PgUserRepository, WechatMiniProgramClient,
+    AppConfig, LogSmsGateway, MemoryCacheService, PgAddressRepository, PgAdminRepository,
+    PgCartRepository, PgCategoryRepository, PgGoodsOrderRepository, PgProductRepository,
+    PgRunnerOrderRepository, PgStoreRepository, PgUserRepository, WechatMiniProgramClient,
 };
 
 /// Build AppState with minimal dependencies
@@ -25,6 +25,7 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
     let cart_repo = Arc::new(PgCartRepository::new(pool.clone()));
     let goods_order_repo = Arc::new(PgGoodsOrderRepository::new(pool.clone()));
     let runner_order_repo = Arc::new(PgRunnerOrderRepository::new(pool.clone()));
+    let address_repo = Arc::new(PgAddressRepository::new(pool.clone()));
     let admin_repo = Arc::new(PgAdminRepository::new(pool));
     let wechat_auth: Arc<dyn WechatAuthClient> = Arc::new(WechatMiniProgramClient::new(
         config.wechat.app_id.clone(),
@@ -42,12 +43,13 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
         config.sms.login_code_ttl_secs,
     );
     let admin_service = AdminService::new(admin_repo);
-    let store_service = StoreService::new(store_repo, Arc::new(NoopLbs));
+    let store_service = StoreService::new(store_repo.clone(), Arc::new(NoopLbs));
     let category_service = CategoryService::new(category_repo);
     let product_service = ProductService::new(product_repo.clone());
     let cart_service = CartService::new(cart_repo);
-    let order_service = OrderService::new(goods_order_repo, product_repo.clone());
+    let order_service = OrderService::new(goods_order_repo, product_repo.clone(), store_repo);
     let runner_order_service = RunnerOrderService::new(runner_order_repo);
+    let address_service = AddressService::new(address_repo);
 
     Ok(AppState::new(
         user_service,
@@ -60,6 +62,7 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
         config.auth.jwt_ttl_secs,
         config.sms.login_code_ttl_secs,
     )
+    .with_address_service(address_service)
     .with_order_services(order_service, runner_order_service))
 }
 

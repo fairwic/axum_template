@@ -6,8 +6,8 @@ use utoipa::OpenApi;
 use crate::handlers::health_handler;
 use crate::openapi::ApiDoc;
 use crate::routes::{
-    admin_auth, admin_order, admin_runner_order, auth, cart, category, member, order, product,
-    runner_order, store,
+    address, admin_auth, admin_order, admin_runner_order, auth, cart, category, member, order,
+    product, runner_order, store,
 };
 use crate::state::AppState;
 
@@ -15,6 +15,7 @@ pub fn create_router(state: AppState) -> Router {
     let api_routes = Router::<AppState>::new()
         .merge(auth::routes())
         .merge(member::routes())
+        .merge(address::routes())
         .merge(store::routes())
         .merge(cart::routes())
         .merge(order::routes())

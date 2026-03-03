@@ -5,7 +5,7 @@ use axum::{
     http::HeaderMap,
     Json,
 };
-use axum_application::{CreateGoodsOrderInput, OrderService};
+use axum_application::{CreateGoodsOrderInput, OrderPreview, OrderService};
 use axum_common::{ApiResponse, AppError, AppResult};
 use axum_domain::order::entity::{
     DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus,
@@ -32,9 +32,18 @@ pub struct CreateOrderRequest {
     pub delivery_type: String,
     pub items: Vec<OrderItemRequest>,
     pub distance_km: Option<f64>,
+    pub address_id: Option<String>,
     pub address_snapshot: Option<serde_json::Value>,
     pub store_snapshot: Option<serde_json::Value>,
     pub remark: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PreviewOrderRequest {
+    pub store_id: String,
+    pub delivery_type: String,
+    pub items: Vec<OrderItemRequest>,
+    pub distance_km: Option<f64>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -77,6 +86,16 @@ pub struct OrderResponse {
     pub address_snapshot: Option<serde_json::Value>,
     pub store_snapshot: Option<serde_json::Value>,
     pub remark: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct OrderPreviewResponse {
+    pub amount_goods: i32,
+    pub amount_delivery_fee: i32,
+    pub amount_discount: i32,
+    pub amount_payable: i32,
+    pub distance_km: Option<f64>,
+    pub deliverable: bool,
 }
 
 fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
@@ -159,6 +178,17 @@ fn to_response(order: GoodsOrder) -> OrderResponse {
     }
 }
 
+fn preview_to_response(preview: OrderPreview) -> OrderPreviewResponse {
+    OrderPreviewResponse {
+        amount_goods: preview.amount_goods,
+        amount_delivery_fee: preview.amount_delivery_fee,
+        amount_discount: preview.amount_discount,
+        amount_payable: preview.amount_payable,
+        distance_km: preview.distance_km,
+        deliverable: preview.deliverable,
+    }
+}
+
 fn get_service(state: &AppState) -> AppResult<OrderService> {
     state
         .order_service
@@ -166,6 +196,37 @@ fn get_service(state: &AppState) -> AppResult<OrderService> {
         .cloned()
         .map(|item| (*item).clone())
         .ok_or_else(|| AppError::Internal("order service not initialized".into()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/orders/preview",
+    request_body = PreviewOrderRequest,
+    responses((status = 200, body = ApiResponse<OrderPreviewResponse>)),
+    tag = "Order"
+)]
+pub async fn preview_order(
+    State(state): State<AppState>,
+    Json(payload): Json<PreviewOrderRequest>,
+) -> AppResult<ApiResponse<OrderPreviewResponse>> {
+    let store_id = parse_ulid(&payload.store_id, "store_id")?;
+    let delivery_type = parse_delivery_type(&payload.delivery_type)?;
+    let service = get_service(&state)?;
+
+    let mut items = Vec::with_capacity(payload.items.len());
+    for item in payload.items {
+        items.push(GoodsOrderItem {
+            product_id: parse_ulid(&item.product_id, "product_id")?,
+            title_snapshot: item.title_snapshot,
+            price_snapshot: item.price_snapshot,
+            qty: item.qty,
+        });
+    }
+
+    let preview = service
+        .preview(store_id, delivery_type, items, payload.distance_km)
+        .await?;
+    Ok(ApiResponse::success(preview_to_response(preview)))
 }
 
 #[utoipa::path(
@@ -184,6 +245,30 @@ pub async fn create_order(
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let delivery_type = parse_delivery_type(&payload.delivery_type)?;
     let service = get_service(&state)?;
+    let mut address_snapshot = payload.address_snapshot;
+
+    if delivery_type == DeliveryType::Delivery && address_snapshot.is_none() {
+        let address_service = state
+            .address_service
+            .as_ref()
+            .cloned()
+            .map(|item| (*item).clone())
+            .ok_or_else(|| AppError::Internal("address service not initialized".into()))?;
+        let address_id = payload
+            .address_id
+            .as_ref()
+            .ok_or_else(|| AppError::Validation("address_id is required".into()))
+            .and_then(|id| parse_ulid(id, "address_id"))?;
+        let address = address_service.get_by_id(user_id, address_id).await?;
+        address_snapshot = Some(serde_json::json!({
+            "address_id": address.id.to_string(),
+            "name": address.name,
+            "phone": address.phone,
+            "detail": address.detail,
+            "lat": address.lat,
+            "lng": address.lng,
+        }));
+    }
 
     let mut items = Vec::with_capacity(payload.items.len());
     for item in payload.items {
@@ -202,7 +287,7 @@ pub async fn create_order(
             delivery_type,
             items,
             distance_km: payload.distance_km,
-            address_snapshot: payload.address_snapshot,
+            address_snapshot,
             store_snapshot: payload.store_snapshot,
             remark: payload.remark,
         })

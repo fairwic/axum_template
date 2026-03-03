@@ -5,6 +5,7 @@
 pub mod config;
 
 pub mod models {
+    pub mod address_model;
     pub mod admin_model;
     pub mod cart_model;
     pub mod category_model;
@@ -16,6 +17,7 @@ pub mod models {
 }
 
 pub mod postgres {
+    pub mod address_repo;
     pub mod admin_repo;
     pub mod cart_repo;
     pub mod category_repo;
@@ -43,6 +45,7 @@ pub use config::AppConfig;
 pub use external::sms_gateway::LogSmsGateway;
 pub use external::wechat_auth_client::WechatMiniProgramClient;
 pub use memory::cache::MemoryCacheService;
+pub use postgres::address_repo::PgAddressRepository;
 pub use postgres::admin_repo::PgAdminRepository;
 pub use postgres::cart_repo::PgCartRepository;
 pub use postgres::category_repo::PgCategoryRepository;

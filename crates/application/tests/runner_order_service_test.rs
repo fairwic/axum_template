@@ -4,6 +4,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use axum_application::{CreateRunnerOrderInput, RunnerOrderService};
 use axum_common::AppResult;
+use axum_domain::order::entity::PayStatus;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 use axum_domain::runner_order::repo::RunnerOrderRepository;
 use tokio::sync::Mutex;
@@ -80,8 +81,9 @@ async fn test_runner_order_create_pay_cancel() {
     let paid = service.pay(user_id, order.id).await.unwrap();
     assert_eq!(paid.status, RunnerOrderStatus::PendingAccept);
 
-    let cancel_result = service.cancel(user_id, order.id, None).await;
-    assert!(cancel_result.is_err());
+    let canceled = service.cancel(user_id, order.id, None).await.unwrap();
+    assert_eq!(canceled.status, RunnerOrderStatus::Canceled);
+    assert_eq!(canceled.pay_status, PayStatus::Refunded);
 }
 
 #[tokio::test]

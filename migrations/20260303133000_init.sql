@@ -1,4 +1,15 @@
 -- core tables
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(26) PRIMARY KEY,
+    openid VARCHAR(64) NOT NULL UNIQUE,
+    nickname VARCHAR(64),
+    avatar TEXT,
+    phone VARCHAR(20),
+    is_member BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS stores (
     id VARCHAR(26) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

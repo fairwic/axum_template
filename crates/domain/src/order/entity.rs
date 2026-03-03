@@ -172,13 +172,20 @@ impl GoodsOrder {
     }
 
     pub fn cancel(&mut self, reason: Option<String>) -> Result<(), DomainError> {
-        if self.status != GoodsOrderStatus::PendingPay {
-            return Err(DomainError::InvalidState(
-                "only pending pay order can be canceled".into(),
-            ));
-        }
+        let refund_required = match self.status {
+            GoodsOrderStatus::PendingPay => false,
+            GoodsOrderStatus::PendingAccept => true,
+            _ => {
+                return Err(DomainError::InvalidState(
+                    "only pending pay/pending accept order can be canceled".into(),
+                ))
+            }
+        };
         let now = Utc::now();
         self.status = GoodsOrderStatus::Canceled;
+        if refund_required {
+            self.pay_status = PayStatus::Refunded;
+        }
         self.cancel_reason = reason;
         self.cancel_time = Some(now);
         self.updated_at = now;
