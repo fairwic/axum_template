@@ -1,7 +1,7 @@
 use utoipa::OpenApi;
 
-use crate::handlers::user_handler;
-use axum_application::dtos::user_dto::{CreateUserDto, UpdateUserDto, UserResponse};
+use crate::handlers::{auth_handler, member_handler};
+use axum_application::dtos::user_dto::{UserResponse, WechatLoginDto};
 use axum_common::response;
 
 #[derive(OpenApi)]
@@ -12,26 +12,27 @@ use axum_common::response;
         description = "Minimal user CRUD example"
     ),
     paths(
-        user_handler::create_user,
-        user_handler::get_user,
-        user_handler::list_users,
-        user_handler::update_user,
-        user_handler::delete_user,
+        auth_handler::wechat_login,
+        member_handler::member_status,
+        member_handler::member_benefits,
     ),
     components(
         schemas(
-            CreateUserDto,
-            UpdateUserDto,
+            WechatLoginDto,
             UserResponse,
-            response::ApiResponse<UserResponse>,
-            response::ApiResponse<Vec<UserResponse>>,
-            response::ApiResponse<String>,
+            auth_handler::LoginResponse,
+            member_handler::MemberStatusResponse,
+            member_handler::MemberBenefitsResponse,
+            response::ApiResponse<auth_handler::LoginResponse>,
+            response::ApiResponse<member_handler::MemberStatusResponse>,
+            response::ApiResponse<member_handler::MemberBenefitsResponse>,
             response::ErrorDetail,
             response::FieldError,
         )
     ),
     tags(
-        (name = "User", description = "User CRUD"),
+        (name = "Auth", description = "Login and tokens"),
+        (name = "Member", description = "Member status and benefits"),
         (name = "System", description = "System endpoints")
     )
 )]

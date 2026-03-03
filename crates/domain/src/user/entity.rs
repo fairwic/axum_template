@@ -8,47 +8,39 @@ use ulid::Ulid;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct User {
     pub id: Ulid,
-    pub name: String,
-    pub email: String,
+    pub openid: String,
+    pub nickname: Option<String>,
+    pub avatar: Option<String>,
+    pub phone: Option<String>,
+    pub is_member: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl User {
-    pub fn new(name: String, email: String) -> Result<Self, DomainError> {
-        Self::validate_name(&name)?;
-        Self::validate_email(&email)?;
+    pub fn new(
+        openid: String,
+        nickname: Option<String>,
+        avatar: Option<String>,
+    ) -> Result<Self, DomainError> {
+        Self::validate_openid(&openid)?;
 
         let now = Utc::now();
         Ok(Self {
             id: Ulid::new(),
-            name,
-            email,
+            openid,
+            nickname,
+            avatar,
+            phone: None,
+            is_member: true,
             created_at: now,
             updated_at: now,
         })
     }
 
-    pub fn update(&mut self, name: String, email: String) -> Result<(), DomainError> {
-        Self::validate_name(&name)?;
-        Self::validate_email(&email)?;
-
-        self.name = name;
-        self.email = email;
-        self.updated_at = Utc::now();
-        Ok(())
-    }
-
-    fn validate_name(name: &str) -> Result<(), DomainError> {
-        if name.trim().is_empty() {
-            return Err(DomainError::Validation("name is required".into()));
-        }
-        Ok(())
-    }
-
-    fn validate_email(email: &str) -> Result<(), DomainError> {
-        if email.trim().is_empty() || !email.contains('@') {
-            return Err(DomainError::Validation("email is invalid".into()));
+    fn validate_openid(openid: &str) -> Result<(), DomainError> {
+        if openid.trim().is_empty() {
+            return Err(DomainError::Validation("openid is required".into()));
         }
         Ok(())
     }
@@ -59,21 +51,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_user_new_rejects_empty_name() {
-        let err = User::new("".into(), "a@b.com".into()).unwrap_err();
-        assert!(err.to_string().contains("name"));
-    }
-
-    #[test]
-    fn test_user_new_rejects_invalid_email() {
-        let err = User::new("Alice".into(), "invalid".into()).unwrap_err();
-        assert!(err.to_string().contains("email"));
+    fn test_user_new_rejects_empty_openid() {
+        let err = User::new("".into(), None, None).unwrap_err();
+        assert!(err.to_string().contains("openid"));
     }
 
     #[test]
     fn test_user_new_success() {
-        let user = User::new("Alice".into(), "a@b.com".into()).unwrap();
-        assert_eq!(user.name, "Alice");
-        assert_eq!(user.email, "a@b.com");
+        let user = User::new("openid-1".into(), Some("Alice".into()), None).unwrap();
+        assert_eq!(user.openid, "openid-1");
+        assert!(user.is_member);
     }
 }
