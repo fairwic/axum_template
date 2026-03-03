@@ -6,6 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::Request,
 };
+use axum_api::auth::jwt::{encode_token, Claims};
 use axum_api::state::BizConfig;
 use axum_api::{create_router, AppState};
 use axum_application::{
@@ -24,6 +25,7 @@ use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
+use chrono::Utc;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tower::util::ServiceExt;
@@ -192,6 +194,16 @@ impl axum_application::services::store_service::LbsService for FakeLbs {
     }
 }
 
+fn admin_auth_header() -> String {
+    let claims = Claims {
+        sub: Ulid::new().to_string(),
+        role: "PLATFORM".into(),
+        exp: (Utc::now().timestamp() + 3600) as usize,
+    };
+    let token = encode_token(&claims, "secret").unwrap();
+    format!("Bearer {token}")
+}
+
 #[tokio::test]
 async fn test_get_config() {
     let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
@@ -238,4 +250,78 @@ async fn test_get_config() {
     assert_eq!(value["data"]["customer_service_phone"], "13800138000");
     assert_eq!(value["data"]["pay_timeout_secs"], 900);
     assert_eq!(value["data"]["auto_accept_secs"], 300);
+}
+
+#[tokio::test]
+async fn test_admin_update_config_and_public_get_latest() {
+    let user_repo: Arc<dyn UserRepository> = Arc::new(InMemoryUserRepo::default());
+    let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
+    let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
+    let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo);
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo);
+    let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
+
+    let state = AppState::new(
+        UserService::new(user_repo),
+        AdminService::new(admin_repo),
+        StoreService::new(store_repo, Arc::new(FakeLbs)),
+        CategoryService::new(category_repo),
+        ProductService::new(product_repo),
+        CartService::new(cart_repo),
+        "secret".into(),
+        3600,
+        300,
+    )
+    .with_biz_config(BizConfig {
+        delivery_free_radius_km: 3.0,
+        runner_service_fee: 200,
+        customer_service_phone: "13800138000".into(),
+        runner_banner_enabled: true,
+        runner_banner_text: "顺路代取快递".into(),
+        pay_timeout_secs: 900,
+        auto_accept_secs: 300,
+    });
+    let app = create_router(state);
+
+    let admin_auth = admin_auth_header();
+    let update_req = Request::builder()
+        .method("PUT")
+        .uri("/api/admin/v1/config")
+        .header("content-type", "application/json")
+        .header("authorization", admin_auth)
+        .body(Body::from(
+            serde_json::json!({
+                "delivery_free_radius_km": 4.0,
+                "runner_service_fee": 300,
+                "customer_service_phone": "400-123-4567",
+                "runner_banner_enabled": false,
+                "runner_banner_text": "代取服务升级",
+                "pay_timeout_secs": 1200,
+                "auto_accept_secs": 180
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let update_res = app.clone().oneshot(update_req).await.unwrap();
+    let update_body = to_bytes(update_res.into_body(), 1024 * 1024).await.unwrap();
+    let update_value: Value = serde_json::from_slice(&update_body).unwrap();
+    assert_eq!(update_value["success"], true);
+
+    let get_req = Request::builder()
+        .method("GET")
+        .uri("/api/v1/config")
+        .body(Body::empty())
+        .unwrap();
+    let get_res = app.oneshot(get_req).await.unwrap();
+    let get_body = to_bytes(get_res.into_body(), 1024 * 1024).await.unwrap();
+    let get_value: Value = serde_json::from_slice(&get_body).unwrap();
+
+    assert_eq!(get_value["success"], true);
+    assert_eq!(get_value["data"]["delivery_free_radius_km"], 4.0);
+    assert_eq!(get_value["data"]["runner_service_fee"], 300);
+    assert_eq!(get_value["data"]["customer_service_phone"], "400-123-4567");
+    assert_eq!(get_value["data"]["runner_banner_enabled"], false);
+    assert_eq!(get_value["data"]["runner_banner_text"], "代取服务升级");
+    assert_eq!(get_value["data"]["pay_timeout_secs"], 1200);
+    assert_eq!(get_value["data"]["auto_accept_secs"], 180);
 }

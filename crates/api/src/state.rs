@@ -4,6 +4,7 @@ use axum_application::{
     AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
     RunnerOrderService, StoreService, UserService,
 };
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct BizConfig {
@@ -44,7 +45,7 @@ pub struct AppState {
     pub jwt_secret: String,
     pub jwt_ttl_secs: u64,
     pub sms_code_ttl_secs: u64,
-    pub biz_config: BizConfig,
+    pub biz_config: Arc<RwLock<BizConfig>>,
 }
 
 impl AppState {
@@ -72,7 +73,7 @@ impl AppState {
             jwt_secret,
             jwt_ttl_secs,
             sms_code_ttl_secs,
-            biz_config: BizConfig::default(),
+            biz_config: Arc::new(RwLock::new(BizConfig::default())),
         }
     }
 
@@ -92,7 +93,7 @@ impl AppState {
     }
 
     pub fn with_biz_config(mut self, biz_config: BizConfig) -> Self {
-        self.biz_config = biz_config;
+        self.biz_config = Arc::new(RwLock::new(biz_config));
         self
     }
 }

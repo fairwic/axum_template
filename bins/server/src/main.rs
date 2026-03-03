@@ -66,10 +66,11 @@ fn spawn_order_jobs(state: AppState) {
 
         loop {
             ticker.tick().await;
+            let config = job_state.biz_config.read().await.clone();
 
             if let Some(order_service) = job_state.order_service.clone() {
                 match order_service
-                    .auto_close_unpaid_orders(job_state.biz_config.pay_timeout_secs)
+                    .auto_close_unpaid_orders(config.pay_timeout_secs)
                     .await
                 {
                     Ok(count) if count > 0 => {
@@ -82,7 +83,7 @@ fn spawn_order_jobs(state: AppState) {
                 }
 
                 match order_service
-                    .auto_accept_pending_orders(job_state.biz_config.auto_accept_secs)
+                    .auto_accept_pending_orders(config.auto_accept_secs)
                     .await
                 {
                     Ok(count) if count > 0 => {
@@ -100,7 +101,7 @@ fn spawn_order_jobs(state: AppState) {
 
             if let Some(runner_order_service) = job_state.runner_order_service.clone() {
                 match runner_order_service
-                    .auto_close_unpaid_orders(job_state.biz_config.pay_timeout_secs)
+                    .auto_close_unpaid_orders(config.pay_timeout_secs)
                     .await
                 {
                     Ok(count) if count > 0 => {
@@ -113,7 +114,7 @@ fn spawn_order_jobs(state: AppState) {
                 }
 
                 match runner_order_service
-                    .auto_accept_pending_orders(job_state.biz_config.auto_accept_secs)
+                    .auto_accept_pending_orders(config.auto_accept_secs)
                     .await
                 {
                     Ok(count) if count > 0 => {

@@ -7,8 +7,9 @@ use crate::auth::middleware::{require_admin_auth, require_user_auth};
 use crate::handlers::health_handler;
 use crate::openapi::ApiDoc;
 use crate::routes::{
-    address, admin_auth, admin_category, admin_order, admin_product, admin_runner_order,
-    admin_store, auth, cart, category, config, member, order, product, runner_order, store,
+    address, admin_auth, admin_category, admin_config, admin_order, admin_product,
+    admin_runner_order, admin_store, auth, cart, category, config, member, order, product,
+    runner_order, store,
 };
 use crate::state::AppState;
 
@@ -36,6 +37,7 @@ pub fn create_router(state: AppState) -> Router {
 
     let admin_public_routes = Router::<AppState>::new().merge(admin_auth::routes());
     let admin_protected_routes = Router::<AppState>::new()
+        .merge(admin_config::routes())
         .merge(admin_store::routes())
         .merge(admin_category::routes())
         .merge(admin_product::routes())

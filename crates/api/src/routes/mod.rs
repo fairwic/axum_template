@@ -1,6 +1,7 @@
 pub mod address;
 pub mod admin_auth;
 pub mod admin_category;
+pub mod admin_config;
 pub mod admin_order;
 pub mod admin_product;
 pub mod admin_runner_order;
