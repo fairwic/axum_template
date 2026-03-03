@@ -11,7 +11,7 @@ idle_timeout_secs = 600
 max_lifetime_secs = 1800
 
 [redis]
-url = "redis://localhost:6379"
+url = "redis://localhost:16379"
 max_connections = 10
 
 [cache]
