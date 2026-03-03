@@ -1,8 +1,8 @@
 use utoipa::OpenApi;
 
-use crate::handlers::{admin_auth_handler, auth_handler, category_handler, member_handler, store_handler};
+use crate::handlers::{admin_auth_handler, auth_handler, category_handler, member_handler, product_handler, store_handler};
 use axum_application::dtos::user_dto::{UserResponse, WechatLoginDto};
-use axum_common::response;
+use axum_common::response::{self, PagedResponse};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -18,6 +18,8 @@ use axum_common::response;
         member_handler::member_benefits,
         store_handler::nearby_stores,
         category_handler::list_categories,
+        product_handler::list_products,
+        product_handler::search_products,
     ),
     components(
         schemas(
@@ -31,12 +33,14 @@ use axum_common::response;
             member_handler::MemberBenefitsResponse,
             store_handler::StoreNearbyResponse,
             category_handler::CategoryResponse,
+            product_handler::ProductResponse,
             response::ApiResponse<auth_handler::LoginResponse>,
             response::ApiResponse<admin_auth_handler::AdminLoginResponse>,
             response::ApiResponse<member_handler::MemberStatusResponse>,
             response::ApiResponse<member_handler::MemberBenefitsResponse>,
             response::ApiResponse<Vec<store_handler::StoreNearbyResponse>>,
             response::ApiResponse<Vec<category_handler::CategoryResponse>>,
+            response::ApiResponse<PagedResponse<product_handler::ProductResponse>>,
             response::ErrorDetail,
             response::FieldError,
         )
@@ -47,6 +51,7 @@ use axum_common::response;
         (name = "Member", description = "Member status and benefits"),
         (name = "Store", description = "Store browsing"),
         (name = "Category", description = "Category browsing"),
+        (name = "Product", description = "Product browsing"),
         (name = "System", description = "System endpoints")
     )
 )]

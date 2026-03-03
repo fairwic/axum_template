@@ -9,11 +9,13 @@ pub mod dtos {
 pub mod services {
     pub mod admin_service;
     pub mod category_service;
+    pub mod product_service;
     pub mod store_service;
     pub mod user_service;
 }
 
 pub use services::admin_service::AdminService;
 pub use services::category_service::CategoryService;
+pub use services::product_service::ProductService;
 pub use services::store_service::StoreService;
 pub use services::user_service::UserService;

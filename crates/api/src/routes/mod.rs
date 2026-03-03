@@ -3,3 +3,4 @@ pub mod admin_auth;
 pub mod member;
 pub mod category;
 pub mod store;
+pub mod product;

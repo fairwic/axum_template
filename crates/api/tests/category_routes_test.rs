@@ -3,12 +3,14 @@ use std::sync::Arc;
 
 use axum::{body::{Body, to_bytes}, http::Request};
 use axum_api::{create_router, AppState};
-use axum_application::{AdminService, CategoryService, StoreService, UserService};
+use axum_application::{AdminService, CategoryService, ProductService, StoreService, UserService};
 use axum_common::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::category::entity::{Category, CategoryStatus};
 use axum_domain::category::repo::CategoryRepository;
+use axum_domain::product::entity::Product;
+use axum_domain::product::repo::ProductRepository;
 use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::user::repo::UserRepository;
@@ -100,6 +102,36 @@ impl CategoryRepository for InMemoryCategoryRepo {
 }
 
 #[derive(Default)]
+struct InMemoryProductRepo;
+
+#[async_trait]
+impl ProductRepository for InMemoryProductRepo {
+    async fn list_by_category(
+        &self,
+        _store_id: Ulid,
+        _category_id: Ulid,
+        _page: i64,
+        _page_size: i64,
+    ) -> AppResult<(Vec<Product>, i64)> {
+        Ok((vec![], 0))
+    }
+
+    async fn search(
+        &self,
+        _store_id: Ulid,
+        _keyword: &str,
+        _page: i64,
+        _page_size: i64,
+    ) -> AppResult<(Vec<Product>, i64)> {
+        Ok((vec![], 0))
+    }
+
+    async fn create(&self, product: &Product) -> AppResult<Product> {
+        Ok(product.clone())
+    }
+}
+
+#[derive(Default)]
 struct FakeLbs;
 
 #[async_trait]
@@ -122,6 +154,8 @@ async fn test_list_categories() {
         Arc::new(FakeLbs::default());
     let store_service = StoreService::new(store_repo, lbs);
     let category_service = CategoryService::new(category_repo.clone());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let product_service = ProductService::new(product_repo);
 
     let store_id = Ulid::new();
     let category = Category::new(store_id, "饮料".into(), 1, CategoryStatus::On).unwrap();
@@ -132,6 +166,7 @@ async fn test_list_categories() {
         admin_service,
         store_service,
         category_service,
+        product_service,
         "secret".into(),
         3600,
     );
