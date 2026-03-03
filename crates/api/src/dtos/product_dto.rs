@@ -38,6 +38,60 @@ pub struct ProductDetailQuery {
     pub store_id: String,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：AdminCreateProductRequest，后台创建商品请求参数
+pub struct AdminCreateProductRequest {
+    /// 参数：store_id，门店唯一标识
+    pub store_id: String,
+    /// 参数：category_id，分类唯一标识
+    pub category_id: String,
+    /// 参数：title，商品标题
+    pub title: String,
+    /// 参数：subtitle，商品副标题
+    pub subtitle: Option<String>,
+    /// 参数：cover_image，封面图 URL
+    pub cover_image: String,
+    /// 参数：images，商品图片列表
+    pub images: Vec<String>,
+    /// 参数：price，当前售价
+    pub price: i32,
+    /// 参数：original_price，商品原价
+    pub original_price: Option<i32>,
+    /// 参数：stock，库存数量
+    pub stock: i32,
+    /// 参数：status，业务状态（ON/OFF）
+    pub status: String,
+    /// 参数：tags，标签列表
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：AdminUpdateProductRequest，后台更新商品请求参数
+pub struct AdminUpdateProductRequest {
+    /// 参数：store_id，门店唯一标识
+    pub store_id: String,
+    /// 参数：category_id，分类唯一标识
+    pub category_id: String,
+    /// 参数：title，商品标题
+    pub title: String,
+    /// 参数：subtitle，商品副标题
+    pub subtitle: Option<String>,
+    /// 参数：cover_image，封面图 URL
+    pub cover_image: String,
+    /// 参数：images，商品图片列表
+    pub images: Vec<String>,
+    /// 参数：price，当前售价
+    pub price: i32,
+    /// 参数：original_price，商品原价
+    pub original_price: Option<i32>,
+    /// 参数：stock，库存数量
+    pub stock: i32,
+    /// 参数：status，业务状态（ON/OFF）
+    pub status: String,
+    /// 参数：tags，标签列表
+    pub tags: Vec<String>,
+}
+
 fn default_page() -> i64 {
     1
 }

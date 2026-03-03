@@ -6,6 +6,10 @@ use async_trait::async_trait;
 use axum_common::{AppError, AppResult};
 use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
+use chrono::Utc;
+use ulid::Ulid;
+
+use crate::dtos::store_dto::{CreateStoreInput, UpdateStoreInput};
 
 #[async_trait]
 pub trait LbsService: Send + Sync {
@@ -53,11 +57,59 @@ impl StoreService {
         Ok(items)
     }
 
-    pub async fn get_by_id(&self, store_id: ulid::Ulid) -> AppResult<Store> {
+    pub async fn get_by_id(&self, store_id: Ulid) -> AppResult<Store> {
         self.repo
             .find_by_id(store_id)
             .await?
             .ok_or_else(|| AppError::NotFound("store not found".into()))
+    }
+
+    pub async fn admin_list(&self) -> AppResult<Vec<Store>> {
+        self.repo.list().await
+    }
+
+    pub async fn admin_create(&self, input: CreateStoreInput) -> AppResult<Store> {
+        let store = Store::new(
+            input.name,
+            input.address,
+            input.lat,
+            input.lng,
+            input.phone,
+            input.business_hours,
+            input.status,
+            input.delivery_radius_km,
+            input.delivery_fee_base,
+            input.delivery_fee_per_km,
+            input.runner_service_fee,
+        )?;
+        self.repo.create(&store).await
+    }
+
+    pub async fn admin_update(&self, store_id: Ulid, input: UpdateStoreInput) -> AppResult<Store> {
+        let existing = self
+            .repo
+            .find_by_id(store_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("store not found".into()))?;
+
+        let mut store = Store::new(
+            input.name,
+            input.address,
+            input.lat,
+            input.lng,
+            input.phone,
+            input.business_hours,
+            input.status,
+            input.delivery_radius_km,
+            input.delivery_fee_base,
+            input.delivery_fee_per_km,
+            input.runner_service_fee,
+        )?;
+        store.id = existing.id;
+        store.created_at = existing.created_at;
+        store.updated_at = Utc::now();
+
+        self.repo.update(&store).await
     }
 }
 

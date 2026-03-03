@@ -24,6 +24,9 @@ pub trait ProductRepository: Send + Sync {
     ) -> AppResult<(Vec<Product>, i64)>;
 
     async fn create(&self, product: &Product) -> AppResult<Product>;
+    async fn update(&self, _product: &Product) -> AppResult<Product> {
+        Err(AppError::Internal("update not implemented".into()))
+    }
 
     async fn find_by_id(&self, _store_id: Ulid, _product_id: Ulid) -> AppResult<Option<Product>> {
         Ok(None)

@@ -74,7 +74,7 @@ impl From<User> for UserResponse {
 
 #[derive(Debug, Serialize, ToSchema)]
 /// DTO定义：LoginResponse，登录响应数据
-pub struct  LoginResponse {
+pub struct LoginResponse {
     /// 参数：token，认证令牌
     pub token: String,
     /// 参数：user，用户信息

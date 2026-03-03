@@ -4,8 +4,11 @@
 
 pub mod dtos {
     pub mod address_dto;
+    pub mod category_dto;
     pub mod order_dto;
+    pub mod product_dto;
     pub mod runner_order_dto;
+    pub mod store_dto;
 }
 
 pub mod services {
@@ -21,8 +24,11 @@ pub mod services {
 }
 
 pub use dtos::address_dto::{CreateAddressInput, UpdateAddressInput};
+pub use dtos::category_dto::{CreateCategoryInput, UpdateCategoryInput};
 pub use dtos::order_dto::{CreateGoodsOrderInput, OrderPreview};
+pub use dtos::product_dto::{CreateProductInput, UpdateProductInput};
 pub use dtos::runner_order_dto::CreateRunnerOrderInput;
+pub use dtos::store_dto::{CreateStoreInput, UpdateStoreInput};
 pub use services::address_service::AddressService;
 pub use services::admin_service::AdminService;
 pub use services::cart_service::CartService;

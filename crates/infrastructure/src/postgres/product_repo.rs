@@ -136,6 +136,46 @@ impl ProductRepository for PgProductRepository {
         row.into_entity()
     }
 
+    async fn update(&self, product: &Product) -> AppResult<Product> {
+        let model = ProductModel::from_entity(product);
+        let row = sqlx::query_as!(
+            ProductModel,
+            r#"
+            UPDATE products
+            SET category_id = $2,
+                title = $3,
+                subtitle = $4,
+                cover_image = $5,
+                images = $6,
+                price = $7,
+                original_price = $8,
+                stock = $9,
+                status = $10,
+                tags = $11,
+                updated_at = $12
+            WHERE id = $1
+            RETURNING id, store_id, category_id, title, subtitle, cover_image, images, price,
+                      original_price, stock, status, tags, created_at, updated_at
+            "#,
+            model.id,
+            model.category_id,
+            model.title,
+            model.subtitle,
+            model.cover_image,
+            model.images,
+            model.price,
+            model.original_price,
+            model.stock,
+            model.status,
+            model.tags,
+            model.updated_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        row.into_entity()
+    }
+
     async fn find_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Option<Product>> {
         let row = sqlx::query_as!(
             ProductModel,

@@ -76,6 +76,49 @@ impl StoreRepository for PgStoreRepository {
         row.into_entity()
     }
 
+    async fn update(&self, store: &Store) -> AppResult<Store> {
+        let model = StoreModel::from_entity(store);
+        let row = sqlx::query_as!(
+            StoreModel,
+            r#"
+            UPDATE stores
+            SET name = $2,
+                address = $3,
+                lat = $4,
+                lng = $5,
+                phone = $6,
+                business_hours = $7,
+                status = $8,
+                delivery_radius_km = $9,
+                delivery_fee_base = $10,
+                delivery_fee_per_km = $11,
+                runner_service_fee = $12,
+                updated_at = $13
+            WHERE id = $1
+            RETURNING id, name, address, lat, lng, phone, business_hours, status,
+                      delivery_radius_km, delivery_fee_base, delivery_fee_per_km, runner_service_fee,
+                      created_at, updated_at
+            "#,
+            model.id,
+            model.name,
+            model.address,
+            model.lat,
+            model.lng,
+            model.phone,
+            model.business_hours,
+            model.status,
+            model.delivery_radius_km,
+            model.delivery_fee_base,
+            model.delivery_fee_per_km,
+            model.runner_service_fee,
+            model.updated_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        row.into_entity()
+    }
+
     async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
         let row = sqlx::query_as!(
             StoreModel,

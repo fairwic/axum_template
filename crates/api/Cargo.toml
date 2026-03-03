@@ -7,7 +7,6 @@ edition.workspace = true
 axum-common.workspace = true
 axum-domain.workspace = true
 axum-application.workspace = true
-axum-infrastructure.workspace = true
 axum.workspace = true
 tower.workspace = true
 tokio.workspace = true

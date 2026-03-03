@@ -64,4 +64,45 @@ impl CategoryRepository for PgCategoryRepository {
 
         row.into_entity()
     }
+
+    async fn find_by_id(&self, category_id: Ulid) -> AppResult<Option<Category>> {
+        let row = sqlx::query_as!(
+            CategoryModel,
+            r#"
+            SELECT id, store_id, name, sort_order, status, created_at, updated_at
+            FROM categories
+            WHERE id = $1
+            "#,
+            category_id.to_string()
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        row.map(CategoryModel::into_entity).transpose()
+    }
+
+    async fn update(&self, category: &Category) -> AppResult<Category> {
+        let model = CategoryModel::from_entity(category);
+        let row = sqlx::query_as!(
+            CategoryModel,
+            r#"
+            UPDATE categories
+            SET name = $2,
+                sort_order = $3,
+                status = $4,
+                updated_at = $5
+            WHERE id = $1
+            RETURNING id, store_id, name, sort_order, status, created_at, updated_at
+            "#,
+            model.id,
+            model.name,
+            model.sort_order,
+            model.status,
+            model.updated_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        row.into_entity()
+    }
 }
