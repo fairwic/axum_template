@@ -35,7 +35,7 @@ impl PgOrderUnitOfWork {
 #[async_trait]
 impl TransactionManager for PgTransactionManager {
     async fn begin_order_uow(&self) -> AppResult<Box<dyn OrderUnitOfWork>> {
-        let tx = self.pool.begin().await?;
+        let tx = self.pool.begin().await.map_err(AppError::database)?;
         Ok(Box::new(PgOrderUnitOfWork { tx: Some(tx) }))
     }
 }
@@ -55,7 +55,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             qty
         )
         .fetch_optional(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         Ok(row.is_some())
     }
@@ -72,7 +73,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             qty
         )
         .execute(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         Ok(())
     }
@@ -127,7 +129,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             model.updated_at
         )
         .fetch_one(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -185,7 +188,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             model.items,
         )
         .fetch_one(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -240,7 +244,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             model.updated_at
         )
         .fetch_one(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -290,7 +295,8 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             model.updated_at,
         )
         .fetch_one(tx.as_mut())
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -300,7 +306,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             .tx
             .take()
             .ok_or_else(|| AppError::Internal("transaction already closed".into()))?;
-        tx.commit().await?;
+        tx.commit().await.map_err(AppError::database)?;
         Ok(())
     }
 
@@ -309,7 +315,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             .tx
             .take()
             .ok_or_else(|| AppError::Internal("transaction already closed".into()))?;
-        tx.rollback().await?;
+        tx.rollback().await.map_err(AppError::database)?;
         Ok(())
     }
 }

@@ -55,7 +55,7 @@ pub enum AppError {
     Forbidden,
 
     #[error("数据库错误: {0}")]
-    Database(#[from] sqlx::Error),
+    Database(String),
 
     #[error("领域错误: {0}")]
     Domain(#[from] DomainError),
@@ -65,6 +65,12 @@ pub enum AppError {
 
     #[error("内部错误: {0}")]
     Internal(String),
+}
+
+impl AppError {
+    pub fn database<E: std::fmt::Display>(error: E) -> Self {
+        Self::Database(error.to_string())
+    }
 }
 
 impl IntoResponse for AppError {

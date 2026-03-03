@@ -1,7 +1,7 @@
 //! Postgres implementation for ProductRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::product::repo::ProductRepository;
 use axum_domain::Product;
 use sqlx::PgPool;
@@ -34,7 +34,7 @@ impl ProductRepository for PgProductRepository {
             category_id.to_string()
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         let offset = (page - 1) * page_size;
         let rows = sqlx::query_as!(
@@ -53,7 +53,8 @@ impl ProductRepository for PgProductRepository {
             offset
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut products = Vec::with_capacity(rows.len());
         for model in rows {
@@ -76,7 +77,7 @@ impl ProductRepository for PgProductRepository {
             like_keyword
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         let offset = (page - 1) * page_size;
         let rows = sqlx::query_as!(
@@ -95,7 +96,8 @@ impl ProductRepository for PgProductRepository {
             offset
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut products = Vec::with_capacity(rows.len());
         for model in rows {
@@ -131,7 +133,7 @@ impl ProductRepository for PgProductRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -171,7 +173,8 @@ impl ProductRepository for PgProductRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -189,7 +192,8 @@ impl ProductRepository for PgProductRepository {
             product_id.to_string()
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.map(ProductModel::into_entity).transpose()
     }
@@ -211,7 +215,8 @@ impl ProductRepository for PgProductRepository {
             &ids
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut products = Vec::with_capacity(rows.len());
         for model in rows {
@@ -232,7 +237,8 @@ impl ProductRepository for PgProductRepository {
             qty
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
         Ok(row.is_some())
     }
 
@@ -247,7 +253,8 @@ impl ProductRepository for PgProductRepository {
             qty
         )
         .execute(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
         Ok(())
     }
 }

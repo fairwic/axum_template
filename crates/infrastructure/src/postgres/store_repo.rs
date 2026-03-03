@@ -1,7 +1,7 @@
 //! Postgres implementation for StoreRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::store::repo::StoreRepository;
 use axum_domain::Store;
 use sqlx::PgPool;
@@ -33,7 +33,8 @@ impl StoreRepository for PgStoreRepository {
             "#
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut stores = Vec::with_capacity(rows.len());
         for model in rows {
@@ -71,7 +72,7 @@ impl StoreRepository for PgStoreRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -114,7 +115,7 @@ impl StoreRepository for PgStoreRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -132,7 +133,8 @@ impl StoreRepository for PgStoreRepository {
             store_id.to_string(),
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.map(StoreModel::into_entity).transpose()
     }

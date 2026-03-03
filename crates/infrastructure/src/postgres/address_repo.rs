@@ -1,7 +1,7 @@
 //! Postgres implementation for AddressRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::address::repo::AddressRepository;
 use axum_domain::Address;
 use sqlx::PgPool;
@@ -33,7 +33,8 @@ impl AddressRepository for PgAddressRepository {
             user_id.to_string(),
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut items = Vec::with_capacity(rows.len());
         for row in rows {
@@ -54,7 +55,8 @@ impl AddressRepository for PgAddressRepository {
             user_id.to_string(),
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.map(AddressModel::into_entity).transpose()
     }
@@ -80,7 +82,7 @@ impl AddressRepository for PgAddressRepository {
             model.updated_at,
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -112,7 +114,8 @@ impl AddressRepository for PgAddressRepository {
             model.updated_at,
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -127,7 +130,8 @@ impl AddressRepository for PgAddressRepository {
             user_id.to_string(),
         )
         .execute(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         Ok(())
     }

@@ -1,7 +1,7 @@
 //! Postgres implementation for AdminRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::Admin;
 use sqlx::PgPool;
@@ -31,7 +31,8 @@ impl AdminRepository for PgAdminRepository {
             phone
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         match row {
             Some(model) => Ok(Some(model.into_entity()?)),
@@ -57,7 +58,8 @@ impl AdminRepository for PgAdminRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }

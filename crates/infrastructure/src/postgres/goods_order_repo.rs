@@ -1,7 +1,7 @@
 //! Postgres implementation for GoodsOrderRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::GoodsOrder;
 use sqlx::PgPool;
@@ -70,7 +70,8 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
             model.updated_at
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -127,7 +128,8 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
             model.items,
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         row.into_entity()
     }
@@ -148,7 +150,8 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
             order_id.to_string()
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         match row {
             Some(value) => Ok(Some(value.into_entity()?)),
@@ -173,7 +176,8 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
             user_id.to_string()
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {
@@ -199,7 +203,8 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
             store_id.to_string()
         )
         .fetch_all(&self.pool)
-        .await?;
+        .await
+        .map_err(AppError::database)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {

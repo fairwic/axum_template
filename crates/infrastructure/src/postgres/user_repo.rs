@@ -1,7 +1,7 @@
 //! Postgres implementation for UserRepository
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
 use sqlx::PgPool;
@@ -32,7 +32,7 @@ impl UserRepository for PgUserRepository {
             openid
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         match row {
             Some(model) => Ok(Some(model.into_entity()?)),
@@ -77,7 +77,7 @@ impl UserRepository for PgUserRepository {
             user_id.to_string()
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         match row {
             Some(model) => Ok(Some(model.into_entity()?)),
@@ -115,7 +115,7 @@ impl UserRepository for PgUserRepository {
             phone
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await.map_err(AppError::database)?;
 
         match row {
             Some(model) => Ok(Some(model.into_entity()?)),
@@ -148,6 +148,6 @@ fn map_user_repo_error(error: sqlx::Error) -> axum_common::AppError {
         sqlx::Error::Database(database_error) if database_error.is_unique_violation() => {
             axum_common::AppError::Conflict("手机号已绑定其他账号".into())
         }
-        _ => error.into(),
+        _ => axum_common::AppError::database(error),
     }
 }
