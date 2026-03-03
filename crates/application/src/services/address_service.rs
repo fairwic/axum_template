@@ -2,30 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::dtos::address_dto::{CreateAddressInput, UpdateAddressInput};
 use axum_common::{AppError, AppResult};
 use axum_domain::address::entity::Address;
 use axum_domain::address::repo::AddressRepository;
 use ulid::Ulid;
-
-#[derive(Debug, Clone)]
-pub struct CreateAddressInput {
-    pub name: String,
-    pub phone: String,
-    pub detail: String,
-    pub lat: Option<f64>,
-    pub lng: Option<f64>,
-    pub is_default: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct UpdateAddressInput {
-    pub name: String,
-    pub phone: String,
-    pub detail: String,
-    pub lat: Option<f64>,
-    pub lng: Option<f64>,
-    pub is_default: bool,
-}
 
 #[derive(Clone)]
 pub struct AddressService {

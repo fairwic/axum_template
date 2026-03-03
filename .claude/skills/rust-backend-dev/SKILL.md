@@ -22,6 +22,14 @@ description: Rust 后端开发技能，基于 DDD 四层架构。用于开发 BJ
 - 禁止跨层调用
 - Domain 层不依赖外部框架
 
+## DTO 分层约定（强制）
+
+- API DTO 放在 `crates/api/src/dtos/`，按业务单文件维护（如 `order_dto.rs`）。
+- Application 用例 Input/Output 放在 `crates/application/src/dtos/`，按业务单文件维护。
+- Service 文件只保留业务逻辑，禁止内联定义 Input/Output 结构体。
+- Handler 显式做映射：`api dto <-> application input/output`。
+- Application 层禁止依赖 API 层 DTO。
+
 ## 详细规范
 
 详细开发规范参考：[references/backend_rules.md](references/backend_rules.md)

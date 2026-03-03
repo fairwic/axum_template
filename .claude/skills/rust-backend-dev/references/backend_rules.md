@@ -72,6 +72,10 @@
 - **禁止**使用 `mod.rs`，所有子模块在 `lib.rs` 内联声明
 - 单文件模块直接用 `.rs` 文件
 - 目录模块使用 `pub mod user { pub mod entity; }`
+- DTO 目录必须分层：
+  - API DTO：`crates/api/src/dtos/<business>_dto.rs`
+  - Application 用例输入输出：`crates/application/src/dtos/<business>_dto.rs`
+- 同一业务功能的 DTO 必须聚合在一个 DTO 文件中，禁止在 handler/service 内联定义
 
 ---
 
@@ -259,9 +263,11 @@
 
 ### DTO 转换
 
-- DTO → Entity: Service 层手动构造
-- Entity → DTO: 使用 `from_domain()` 或 `From`
-- **禁止**在 Handler 层转换
+- API DTO → Application Input：Handler 层负责映射
+- Application Input → Entity：Service 层手动构造
+- Entity → Application Output：Service 层聚合
+- Application Output → API DTO：Handler 层负责映射
+- **禁止** Application 层依赖 API 层 DTO
 
 ---
 
@@ -405,4 +411,3 @@ unwrap_used = "deny"
 - [ ] 公开 API 有 OpenAPI 注解
 - [ ] 代码通过 `cargo clippy` 检查
 - [ ] 核心逻辑有单元测试
-

@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use crate::dtos::order_dto::{CreateGoodsOrderInput, OrderPreview};
 use axum_common::{AppError, AppResult};
 use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem};
 use axum_domain::order::repo::GoodsOrderRepository;
@@ -10,28 +11,6 @@ use axum_domain::product::entity::ProductStatus;
 use axum_domain::product::repo::ProductRepository;
 use axum_domain::store::repo::StoreRepository;
 use ulid::Ulid;
-
-#[derive(Debug, Clone)]
-pub struct CreateGoodsOrderInput {
-    pub user_id: Ulid,
-    pub store_id: Ulid,
-    pub delivery_type: DeliveryType,
-    pub items: Vec<GoodsOrderItem>,
-    pub distance_km: Option<f64>,
-    pub address_snapshot: Option<serde_json::Value>,
-    pub store_snapshot: Option<serde_json::Value>,
-    pub remark: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct OrderPreview {
-    pub amount_goods: i32,
-    pub amount_delivery_fee: i32,
-    pub amount_discount: i32,
-    pub amount_payable: i32,
-    pub distance_km: Option<f64>,
-    pub deliverable: bool,
-}
 
 #[derive(Clone)]
 pub struct OrderService {

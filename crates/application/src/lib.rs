@@ -1,9 +1,11 @@
 //! # Backend Template Application
 //!
-//! 应用层，仅保留最小 UserService 示例。
+//! 应用层，负责业务编排与用例输入输出定义。
 
 pub mod dtos {
-    pub mod user_dto;
+    pub mod address_dto;
+    pub mod order_dto;
+    pub mod runner_order_dto;
 }
 
 pub mod services {
@@ -18,12 +20,15 @@ pub mod services {
     pub mod user_service;
 }
 
-pub use services::address_service::{AddressService, CreateAddressInput, UpdateAddressInput};
+pub use dtos::address_dto::{CreateAddressInput, UpdateAddressInput};
+pub use dtos::order_dto::{CreateGoodsOrderInput, OrderPreview};
+pub use dtos::runner_order_dto::CreateRunnerOrderInput;
+pub use services::address_service::AddressService;
 pub use services::admin_service::AdminService;
 pub use services::cart_service::CartService;
 pub use services::category_service::CategoryService;
-pub use services::order_service::{CreateGoodsOrderInput, OrderPreview, OrderService};
+pub use services::order_service::OrderService;
 pub use services::product_service::ProductService;
-pub use services::runner_order_service::{CreateRunnerOrderInput, RunnerOrderService};
+pub use services::runner_order_service::RunnerOrderService;
 pub use services::store_service::StoreService;
 pub use services::user_service::UserService;

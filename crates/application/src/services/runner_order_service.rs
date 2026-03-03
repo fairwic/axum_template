@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use crate::dtos::runner_order_dto::CreateRunnerOrderInput;
 use axum_common::{AppError, AppResult};
 use axum_domain::runner_order::entity::RunnerOrder;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
@@ -10,19 +11,6 @@ use ulid::Ulid;
 const RUNNER_BASE_FEE: i32 = 200;
 const RUNNER_SURCHARGE_PER_EXTRA_KM: i32 = 100;
 const RUNNER_FREE_DISTANCE_KM: f64 = 3.0;
-
-#[derive(Debug, Clone)]
-pub struct CreateRunnerOrderInput {
-    pub user_id: Ulid,
-    pub store_id: Ulid,
-    pub express_company: String,
-    pub pickup_code: String,
-    pub delivery_address: String,
-    pub receiver_name: String,
-    pub receiver_phone: String,
-    pub remark: Option<String>,
-    pub distance_km: Option<f64>,
-}
 
 #[derive(Clone)]
 pub struct RunnerOrderService {
