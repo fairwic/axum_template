@@ -50,7 +50,7 @@ pub async fn get_cart(
     State(state): State<AppState>,
     Query(query): Query<CartQuery>,
     auth_user: AuthUser,
-) -> AppResult<ApiResponse<CartResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CartResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&query.store_id, "store_id")?;
     let cart = state.cart_service.get_cart(user_id, store_id).await?;
@@ -69,7 +69,7 @@ pub async fn add_item(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<AddItemRequest>,
-) -> AppResult<ApiResponse<CartResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CartResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
@@ -101,7 +101,7 @@ pub async fn update_qty(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<UpdateQtyRequest>,
-) -> AppResult<ApiResponse<CartResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CartResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
@@ -140,7 +140,7 @@ pub async fn remove_item(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<RemoveItemRequest>,
-) -> AppResult<ApiResponse<CartResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CartResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let product_id = parse_ulid(&payload.product_id, "product_id")?;
@@ -165,7 +165,7 @@ pub async fn clear_cart(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<ClearCartRequest>,
-) -> AppResult<ApiResponse<CartResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CartResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
 

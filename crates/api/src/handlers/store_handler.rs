@@ -4,7 +4,7 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use axum_common::{ApiResponse, AppError, AppResult};
+use axum_common::{ApiResponse, AppError};
 
 use axum_domain::store::entity::{Store, StoreStatus};
 
@@ -64,7 +64,7 @@ fn to_store_response(store: Store) -> StoreResponse {
 pub async fn nearby_stores(
     State(state): State<AppState>,
     Query(query): Query<NearbyQuery>,
-) -> AppResult<ApiResponse<Vec<StoreNearbyResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<StoreNearbyResponse>>> {
     let items = state.store_service.nearby(query.lat, query.lng).await?;
     let data = items
         .into_iter()
@@ -92,7 +92,7 @@ pub async fn select_store(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<SelectStoreRequest>,
-) -> AppResult<ApiResponse<StoreResponse>> {
+) -> crate::error::ApiResult<ApiResponse<StoreResponse>> {
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
 
@@ -116,7 +116,7 @@ pub async fn select_store(
 pub async fn current_store(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> AppResult<ApiResponse<StoreResponse>> {
+) -> crate::error::ApiResult<ApiResponse<StoreResponse>> {
     let user_id = auth_user.user_id;
     let user = state.user_service.get_by_id(user_id).await?;
     let store_id = user

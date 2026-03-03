@@ -37,7 +37,7 @@ fn get_service(state: &AppState) -> AppResult<AddressService> {
 pub async fn list_addresses(
     State(state): State<AppState>,
     auth_user: AuthUser,
-) -> AppResult<ApiResponse<Vec<AddressResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<AddressResponse>>> {
     let user_id = auth_user.user_id;
     let addresses = get_service(&state)?.list(user_id).await?;
     Ok(ApiResponse::success(
@@ -57,7 +57,7 @@ pub async fn create_address(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<CreateAddressRequest>,
-) -> AppResult<ApiResponse<AddressResponse>> {
+) -> crate::error::ApiResult<ApiResponse<AddressResponse>> {
     let user_id = auth_user.user_id;
     let address = get_service(&state)?
         .create(
@@ -89,7 +89,7 @@ pub async fn update_address(
     auth_user: AuthUser,
     Path(address_id): Path<String>,
     Json(payload): Json<UpdateAddressRequest>,
-) -> AppResult<ApiResponse<AddressResponse>> {
+) -> crate::error::ApiResult<ApiResponse<AddressResponse>> {
     let user_id = auth_user.user_id;
     let address_id = parse_ulid(&address_id, "address_id")?;
     let address = get_service(&state)?
@@ -121,7 +121,7 @@ pub async fn delete_address(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(address_id): Path<String>,
-) -> AppResult<ApiResponse<bool>> {
+) -> crate::error::ApiResult<ApiResponse<bool>> {
     let user_id = auth_user.user_id;
     let address_id = parse_ulid(&address_id, "address_id")?;
     get_service(&state)?.delete(user_id, address_id).await?;
@@ -140,7 +140,7 @@ pub async fn set_default_address(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(address_id): Path<String>,
-) -> AppResult<ApiResponse<AddressResponse>> {
+) -> crate::error::ApiResult<ApiResponse<AddressResponse>> {
     let user_id = auth_user.user_id;
     let address_id = parse_ulid(&address_id, "address_id")?;
     let address = get_service(&state)?

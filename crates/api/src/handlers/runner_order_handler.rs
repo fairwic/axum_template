@@ -90,7 +90,7 @@ pub async fn create_runner_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<CreateRunnerOrderRequest>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let user_id = auth_user.user_id;
     let input = map_create_runner_order_input(payload, user_id)?;
     let order = get_service(&state)?.create(input).await?;
@@ -110,7 +110,7 @@ pub async fn pay_runner_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<PayRunnerOrderRequest>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&payload.runner_order_id, "runner_order_id")?;
     let order = get_service(&state)?.pay(user_id, runner_order_id).await?;
@@ -129,7 +129,7 @@ pub async fn list_runner_orders(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Query(query): Query<ListRunnerOrdersQuery>,
-) -> AppResult<ApiResponse<Vec<RunnerOrderResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<RunnerOrderResponse>>> {
     let user_id = auth_user.user_id;
     let mut orders = get_service(&state)?.list_by_user(user_id).await?;
     if let Some(status) = query.status {
@@ -152,7 +152,7 @@ pub async fn get_runner_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(runner_order_id): Path<String>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&runner_order_id, "runner_order_id")?;
     let order = get_service(&state)?
@@ -175,7 +175,7 @@ pub async fn cancel_runner_order(
     auth_user: AuthUser,
     Path(runner_order_id): Path<String>,
     Json(payload): Json<CancelRunnerOrderRequest>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let user_id = auth_user.user_id;
     let runner_order_id = parse_ulid(&runner_order_id, "runner_order_id")?;
     let cancel_timeout_secs = state.biz_config.read().await.cancel_timeout_secs;

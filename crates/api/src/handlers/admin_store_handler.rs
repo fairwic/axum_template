@@ -91,7 +91,7 @@ fn get_service(state: &AppState) -> StoreService {
 /// 接口功能：admin_list_stores，后台查询门店列表
 pub async fn admin_list_stores(
     State(state): State<AppState>,
-) -> AppResult<ApiResponse<Vec<StoreAdminResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<StoreAdminResponse>>> {
     let stores = get_service(&state).admin_list().await?;
     Ok(ApiResponse::success(
         stores.into_iter().map(to_response).collect(),
@@ -109,7 +109,7 @@ pub async fn admin_list_stores(
 pub async fn admin_create_store(
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateStoreRequest>,
-) -> AppResult<ApiResponse<StoreAdminResponse>> {
+) -> crate::error::ApiResult<ApiResponse<StoreAdminResponse>> {
     let input = map_create_store_input(payload)?;
     let store = get_service(&state).admin_create(input).await?;
     Ok(ApiResponse::success(to_response(store)))
@@ -128,7 +128,7 @@ pub async fn admin_update_store(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<AdminUpdateStoreRequest>,
-) -> AppResult<ApiResponse<StoreAdminResponse>> {
+) -> crate::error::ApiResult<ApiResponse<StoreAdminResponse>> {
     let store_id = parse_ulid(&id, "store_id")?;
     let input = map_update_store_input(payload)?;
     let store = get_service(&state).admin_update(store_id, input).await?;

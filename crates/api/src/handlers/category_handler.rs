@@ -1,7 +1,7 @@
 //! Category handlers
 
 use axum::extract::{Query, State};
-use axum_common::{ApiResponse, AppError, AppResult};
+use axum_common::{ApiResponse, AppError};
 use ulid::Ulid;
 
 use axum_domain::category::entity::{Category, CategoryStatus};
@@ -37,7 +37,7 @@ fn to_response(category: Category) -> CategoryResponse {
 pub async fn list_categories(
     State(state): State<AppState>,
     Query(query): Query<CategoryQuery>,
-) -> AppResult<ApiResponse<Vec<CategoryResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<CategoryResponse>>> {
     let store_id = Ulid::from_string(&query.store_id)
         .map_err(|_| AppError::Validation("invalid store_id".into()))?;
     let categories = state.category_service.list_by_store(store_id).await?;

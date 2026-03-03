@@ -72,7 +72,7 @@ fn to_response(order: axum_domain::GoodsOrder) -> OrderResponse {
 pub async fn admin_list_orders(
     State(state): State<AppState>,
     Query(query): Query<AdminListOrdersQuery>,
-) -> AppResult<ApiResponse<Vec<OrderResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<OrderResponse>>> {
     let store_id = parse_ulid(&query.store_id, "store_id")?;
     let mut orders = get_service(&state)?.admin_list_by_store(store_id).await?;
     if let Some(status) = query.status {
@@ -107,7 +107,7 @@ pub async fn admin_list_orders(
 pub async fn admin_accept_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.admin_accept(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -124,7 +124,7 @@ pub async fn admin_accept_order(
 pub async fn admin_dispatch_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.admin_dispatch(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -141,7 +141,7 @@ pub async fn admin_dispatch_order(
 pub async fn admin_complete_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.admin_complete(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))

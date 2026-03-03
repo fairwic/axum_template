@@ -93,7 +93,7 @@ fn get_service(state: &AppState) -> ProductService {
 pub async fn admin_create_product(
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateProductRequest>,
-) -> AppResult<ApiResponse<ProductResponse>> {
+) -> crate::error::ApiResult<ApiResponse<ProductResponse>> {
     let input = map_create_product_input(payload)?;
     let product = get_service(&state).admin_create(input).await?;
     Ok(ApiResponse::success(to_response(product)))
@@ -112,7 +112,7 @@ pub async fn admin_update_product(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<AdminUpdateProductRequest>,
-) -> AppResult<ApiResponse<ProductResponse>> {
+) -> crate::error::ApiResult<ApiResponse<ProductResponse>> {
     let product_id = parse_ulid(&id, "product_id")?;
     let input = map_update_product_input(payload)?;
     let product = get_service(&state).admin_update(product_id, input).await?;

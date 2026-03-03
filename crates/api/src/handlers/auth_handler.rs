@@ -22,7 +22,7 @@ use crate::state::AppState;
 pub async fn wechat_login(
     State(state): State<AppState>,
     Json(payload): Json<WechatLoginDto>,
-) -> AppResult<ApiResponse<LoginResponse>> {
+) -> crate::error::ApiResult<ApiResponse<LoginResponse>> {
     let user = state
         .user_service
         .login_with_wechat_code(payload.code, payload.nickname, payload.avatar)
@@ -42,7 +42,7 @@ pub async fn wechat_login(
 pub async fn send_sms_code(
     State(state): State<AppState>,
     Json(payload): Json<SendSmsCodeDto>,
-) -> AppResult<ApiResponse<SendSmsCodeResponse>> {
+) -> crate::error::ApiResult<ApiResponse<SendSmsCodeResponse>> {
     state
         .user_service
         .send_login_sms_code(payload.phone)
@@ -64,7 +64,7 @@ pub async fn send_sms_code(
 pub async fn phone_sms_login(
     State(state): State<AppState>,
     Json(payload): Json<PhoneSmsLoginDto>,
-) -> AppResult<ApiResponse<LoginResponse>> {
+) -> crate::error::ApiResult<ApiResponse<LoginResponse>> {
     let user = state
         .user_service
         .login_with_phone_sms(

@@ -28,10 +28,10 @@ pub async fn require_user_auth(
     State(state): State<AppState>,
     mut request: Request<Body>,
     next: Next,
-) -> AppResult<Response> {
+) -> crate::error::ApiResult<Response> {
     let claims = decode_claims(&request, &state.jwt_secret)?;
     if claims.role != "USER" {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden.into());
     }
     request.extensions_mut().insert(claims);
 
@@ -42,10 +42,10 @@ pub async fn require_admin_auth(
     State(state): State<AppState>,
     mut request: Request<Body>,
     next: Next,
-) -> AppResult<Response> {
+) -> crate::error::ApiResult<Response> {
     let claims = decode_claims(&request, &state.jwt_secret)?;
     if claims.role != "PLATFORM" && claims.role != "STORE" {
-        return Err(AppError::Forbidden);
+        return Err(AppError::Forbidden.into());
     }
 
     request.extensions_mut().insert(claims);

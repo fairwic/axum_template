@@ -145,7 +145,7 @@ fn get_service(state: &AppState) -> AppResult<OrderService> {
 pub async fn preview_order(
     State(state): State<AppState>,
     Json(payload): Json<PreviewOrderRequest>,
-) -> AppResult<ApiResponse<OrderPreviewResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderPreviewResponse>> {
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let delivery_type = parse_delivery_type(&payload.delivery_type)?;
     let service = get_service(&state)?;
@@ -169,7 +169,7 @@ pub async fn create_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<CreateOrderRequest>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let payload = payload;
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
@@ -212,7 +212,7 @@ pub async fn pay_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Json(payload): Json<PayOrderRequest>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let user_id = auth_user.user_id;
     let order_id = parse_ulid(&payload.order_id, "order_id")?;
     let order = get_service(&state)?.pay(user_id, order_id).await?;
@@ -231,7 +231,7 @@ pub async fn list_orders(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Query(query): Query<ListOrdersQuery>,
-) -> AppResult<ApiResponse<Vec<OrderResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<OrderResponse>>> {
     let user_id = auth_user.user_id;
     let service = get_service(&state)?;
     let mut orders = service.list_by_user(user_id).await?;
@@ -255,7 +255,7 @@ pub async fn get_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.get_by_user(user_id, order_id).await?;
@@ -276,7 +276,7 @@ pub async fn cancel_order(
     auth_user: AuthUser,
     Path(order_id): Path<String>,
     Json(payload): Json<CancelOrderRequest>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
     let cancel_timeout_secs = state.biz_config.read().await.cancel_timeout_secs;
@@ -298,7 +298,7 @@ pub async fn repurchase_order(
     State(state): State<AppState>,
     auth_user: AuthUser,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<OrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
     let user_id = auth_user.user_id;
     let order_id = parse_ulid(&order_id, "order_id")?;
     let order = get_service(&state)?.repurchase(user_id, order_id).await?;

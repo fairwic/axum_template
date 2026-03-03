@@ -61,7 +61,9 @@ fn validate_update(payload: &UpdateConfigRequest) -> AppResult<()> {
     tag = "Config"
 )]
 /// 接口功能：get_config，获取小程序全局配置
-pub async fn get_config(State(state): State<AppState>) -> AppResult<ApiResponse<ConfigResponse>> {
+pub async fn get_config(
+    State(state): State<AppState>,
+) -> crate::error::ApiResult<ApiResponse<ConfigResponse>> {
     let config = state.biz_config.read().await;
     let config = to_response(&config);
     Ok(ApiResponse::success(config))
@@ -76,7 +78,7 @@ pub async fn get_config(State(state): State<AppState>) -> AppResult<ApiResponse<
 /// 接口功能：admin_get_config，后台查询全局配置
 pub async fn admin_get_config(
     State(state): State<AppState>,
-) -> AppResult<ApiResponse<ConfigResponse>> {
+) -> crate::error::ApiResult<ApiResponse<ConfigResponse>> {
     let config = state.biz_config.read().await;
     let config = to_response(&config);
     Ok(ApiResponse::success(config))
@@ -93,7 +95,7 @@ pub async fn admin_get_config(
 pub async fn admin_update_config(
     State(state): State<AppState>,
     Json(payload): Json<UpdateConfigRequest>,
-) -> AppResult<ApiResponse<ConfigResponse>> {
+) -> crate::error::ApiResult<ApiResponse<ConfigResponse>> {
     validate_update(&payload)?;
     let updated = {
         let mut config = state.biz_config.write().await;

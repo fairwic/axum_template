@@ -1,7 +1,7 @@
 //! Product handlers
 
 use axum::extract::{Path, Query, State};
-use axum_common::{ApiResponse, AppError, AppResult, PagedResponse};
+use axum_common::{ApiResponse, AppError, PagedResponse};
 use ulid::Ulid;
 
 use axum_domain::product::entity::{Product, ProductStatus};
@@ -46,7 +46,7 @@ fn to_response(product: Product) -> ProductResponse {
 pub async fn list_products(
     State(state): State<AppState>,
     Query(query): Query<ProductListQuery>,
-) -> AppResult<ApiResponse<PagedResponse<ProductResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<PagedResponse<ProductResponse>>> {
     let store_id = Ulid::from_string(&query.store_id)
         .map_err(|_| AppError::Validation("invalid store_id".into()))?;
     let category_id = Ulid::from_string(&query.category_id)
@@ -77,7 +77,7 @@ pub async fn list_products(
 pub async fn search_products(
     State(state): State<AppState>,
     Query(query): Query<ProductSearchQuery>,
-) -> AppResult<ApiResponse<PagedResponse<ProductResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<PagedResponse<ProductResponse>>> {
     let store_id = Ulid::from_string(&query.store_id)
         .map_err(|_| AppError::Validation("invalid store_id".into()))?;
 
@@ -107,7 +107,7 @@ pub async fn get_product(
     State(state): State<AppState>,
     Path(product_id): Path<String>,
     Query(query): Query<ProductDetailQuery>,
-) -> AppResult<ApiResponse<ProductResponse>> {
+) -> crate::error::ApiResult<ApiResponse<ProductResponse>> {
     let store_id = Ulid::from_string(&query.store_id)
         .map_err(|_| AppError::Validation("invalid store_id".into()))?;
     let product_id =

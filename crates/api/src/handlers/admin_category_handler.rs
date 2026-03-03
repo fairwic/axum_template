@@ -75,7 +75,7 @@ fn get_service(state: &AppState) -> CategoryService {
 pub async fn admin_create_category(
     State(state): State<AppState>,
     Json(payload): Json<AdminCreateCategoryRequest>,
-) -> AppResult<ApiResponse<CategoryResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CategoryResponse>> {
     let input = map_create_category_input(payload)?;
     let category = get_service(&state).admin_create(input).await?;
     Ok(ApiResponse::success(to_response(category)))
@@ -94,7 +94,7 @@ pub async fn admin_update_category(
     State(state): State<AppState>,
     Path(id): Path<String>,
     Json(payload): Json<AdminUpdateCategoryRequest>,
-) -> AppResult<ApiResponse<CategoryResponse>> {
+) -> crate::error::ApiResult<ApiResponse<CategoryResponse>> {
     let category_id = parse_ulid(&id, "category_id")?;
     let input = map_update_category_input(payload)?;
     let category = get_service(&state).admin_update(category_id, input).await?;

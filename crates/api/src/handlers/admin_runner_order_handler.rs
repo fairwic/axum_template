@@ -58,7 +58,7 @@ fn to_response(order: axum_domain::RunnerOrder) -> RunnerOrderResponse {
 pub async fn admin_list_runner_orders(
     State(state): State<AppState>,
     Query(query): Query<AdminListRunnerOrdersQuery>,
-) -> AppResult<ApiResponse<Vec<RunnerOrderResponse>>> {
+) -> crate::error::ApiResult<ApiResponse<Vec<RunnerOrderResponse>>> {
     let store_id = parse_ulid(&query.store_id, "store_id")?;
     let mut orders = get_service(&state)?.admin_list_by_store(store_id).await?;
     if let Some(status) = query.status {
@@ -92,7 +92,7 @@ pub async fn admin_list_runner_orders(
 pub async fn admin_accept_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let order_id = parse_ulid(&order_id, "runner_order_id")?;
     let order = get_service(&state)?.admin_accept(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -109,7 +109,7 @@ pub async fn admin_accept_runner_order(
 pub async fn admin_delivered_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let order_id = parse_ulid(&order_id, "runner_order_id")?;
     let order = get_service(&state)?.admin_delivered(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))
@@ -126,7 +126,7 @@ pub async fn admin_delivered_runner_order(
 pub async fn admin_complete_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
-) -> AppResult<ApiResponse<RunnerOrderResponse>> {
+) -> crate::error::ApiResult<ApiResponse<RunnerOrderResponse>> {
     let order_id = parse_ulid(&order_id, "runner_order_id")?;
     let order = get_service(&state)?.admin_complete(order_id).await?;
     Ok(ApiResponse::success(to_response(order)))

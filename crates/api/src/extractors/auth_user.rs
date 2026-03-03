@@ -16,7 +16,7 @@ impl<S> FromRequestParts<S> for AuthUser
 where
     S: Send + Sync,
 {
-    type Rejection = AppError;
+    type Rejection = crate::error::ApiError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let claims = parts
@@ -25,7 +25,7 @@ where
             .cloned()
             .ok_or(AppError::Unauthorized)?;
         if claims.role != "USER" {
-            return Err(AppError::Forbidden);
+            return Err(AppError::Forbidden.into());
         }
         let user_id = Ulid::from_string(&claims.sub)
             .map_err(|_| AppError::Validation("invalid user_id".into()))?;

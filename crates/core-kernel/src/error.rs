@@ -1,11 +1,5 @@
 //! Unified error model used across layers.
 
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
-use serde_json::json;
 use thiserror::Error;
 
 /// Domain-level business errors.
@@ -70,56 +64,6 @@ pub enum AppError {
 impl AppError {
     pub fn database<E: std::fmt::Display>(error: E) -> Self {
         Self::Database(error.to_string())
-    }
-}
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        tracing::error!(error = %self, "请求处理失败");
-
-        let (status, code, message) = match &self {
-            Self::Validation(msg) => (StatusCode::OK, "VALIDATION_ERROR", msg.as_str()),
-            Self::NotFound(msg) => {
-                tracing::info!("Converting NotFound error to OK 200: {}", msg);
-                (StatusCode::OK, "NOT_FOUND", msg.as_str())
-            }
-            Self::Conflict(msg) => (StatusCode::CONFLICT, "CONFLICT", msg.as_str()),
-            Self::Unauthorized => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED", "未授权访问"),
-            Self::Forbidden => (StatusCode::FORBIDDEN, "FORBIDDEN", "禁止访问"),
-            Self::Domain(e) => match e {
-                DomainError::Validation(msg) => (StatusCode::OK, "DOMAIN_VALIDATION", msg.as_str()),
-                DomainError::BusinessRule(msg) => (StatusCode::OK, "BUSINESS_RULE", msg.as_str()),
-                DomainError::NotFound(msg) => (StatusCode::OK, "NOT_FOUND", msg.as_str()),
-                DomainError::State(msg) => (StatusCode::OK, "INVALID_STATE", msg.as_str()),
-                DomainError::InvalidState(msg) => (StatusCode::OK, "INVALID_STATE", msg.as_str()),
-                DomainError::PermissionDenied(msg) => {
-                    (StatusCode::OK, "PERMISSION_DENIED", msg.as_str())
-                }
-                DomainError::ConcurrencyConflict => (
-                    StatusCode::OK,
-                    "CONCURRENCY_CONFLICT",
-                    "数据已被修改，请刷新后重试",
-                ),
-                DomainError::InfrastructureError(msg) => {
-                    (StatusCode::OK, "INFRASTRUCTURE_ERROR", msg.as_str())
-                }
-            },
-            Self::Database(_) | Self::Internal(_) | Self::Serialization(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "INTERNAL_ERROR",
-                "服务器内部错误",
-            ),
-        };
-
-        let body = Json(json!({
-            "success": false,
-            "error": {
-                "code": code,
-                "message": message
-            }
-        }));
-
-        (status, body).into_response()
     }
 }
 

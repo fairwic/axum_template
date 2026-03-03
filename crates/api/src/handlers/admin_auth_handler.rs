@@ -1,7 +1,7 @@
 //! Admin auth handlers
 
 use axum::{extract::State, Json};
-use axum_common::{ApiResponse, AppError, AppResult};
+use axum_common::{ApiResponse, AppError};
 use chrono::Utc;
 
 use axum_domain::admin::entity::{Admin, AdminRole};
@@ -37,7 +37,7 @@ fn to_response(admin: Admin) -> AdminResponse {
 pub async fn admin_login(
     State(state): State<AppState>,
     Json(payload): Json<AdminLoginDto>,
-) -> AppResult<ApiResponse<AdminLoginResponse>> {
+) -> crate::error::ApiResult<ApiResponse<AdminLoginResponse>> {
     let admin = state
         .admin_service
         .login(&payload.phone, &payload.password)
