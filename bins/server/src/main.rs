@@ -31,10 +31,10 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("Failed to connect to database")?;
 
-    sqlx::migrate!("../../migrations")
-        .run(&pool)
-        .await
-        .context("Failed to run database migrations")?;
+    // sqlx::migrate!("../../migrations")
+    //     .run(&pool)
+    //     .await
+    //     .context("Failed to run database migrations")?;
 
     let state = bootstrap::build_app_state(pool).await?;
     let app = create_router(state);
