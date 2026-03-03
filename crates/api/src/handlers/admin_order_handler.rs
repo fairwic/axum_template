@@ -3,21 +3,11 @@
 use axum::extract::{Path, Query, State};
 use axum_application::OrderService;
 use axum_common::{ApiResponse, AppError, AppResult};
-use serde::Deserialize;
 use ulid::Ulid;
-use utoipa::ToSchema;
 
-use crate::handlers::order_handler::OrderResponse;
+use crate::dtos::admin_order_dto::AdminListOrdersQuery;
+use crate::dtos::order_dto::{OrderItemResponse, OrderResponse};
 use crate::state::AppState;
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：AdminListOrdersQuery，后台订单列表查询参数
-pub struct AdminListOrdersQuery {
-    /// 参数：store_id，门店唯一标识
-    pub store_id: String,
-    /// 参数：status，业务状态
-    pub status: Option<String>,
-}
 
 fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
     Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
@@ -33,7 +23,7 @@ fn get_service(state: &AppState) -> AppResult<OrderService> {
 }
 
 fn to_response(order: axum_domain::GoodsOrder) -> OrderResponse {
-    crate::handlers::order_handler::OrderResponse {
+    OrderResponse {
         order_id: order.id.to_string(),
         user_id: order.user_id.to_string(),
         store_id: order.store_id.to_string(),
@@ -59,7 +49,7 @@ fn to_response(order: axum_domain::GoodsOrder) -> OrderResponse {
         items: order
             .items
             .into_iter()
-            .map(|item| crate::handlers::order_handler::OrderItemResponse {
+            .map(|item| OrderItemResponse {
                 product_id: item.product_id.to_string(),
                 title_snapshot: item.title_snapshot,
                 price_snapshot: item.price_snapshot,

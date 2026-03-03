@@ -1,6 +1,7 @@
 //! Backend Template API
 
 pub mod auth;
+pub mod dtos;
 pub mod handlers;
 pub mod openapi;
 pub mod router;

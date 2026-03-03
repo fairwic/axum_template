@@ -9,88 +9,15 @@ use axum_application::{CreateRunnerOrderInput, RunnerOrderService};
 use axum_common::{ApiResponse, AppError, AppResult};
 use axum_domain::order::entity::PayStatus;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
-use serde::{Deserialize, Serialize};
 use ulid::Ulid;
-use utoipa::ToSchema;
 
+use crate::dtos::runner_order_dto::{
+    CancelRunnerOrderRequest, CreateRunnerOrderRequest, ListRunnerOrdersQuery,
+    PayRunnerOrderRequest, RunnerOrderResponse,
+};
 use crate::state::AppState;
 
 const USER_ID_HEADER: &str = "x-user-id";
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：CreateRunnerOrderRequest，创建跑腿订单请求参数
-pub struct CreateRunnerOrderRequest {
-    /// 参数：store_id，门店唯一标识
-    pub store_id: String,
-    /// 参数：express_company，快递公司名称
-    pub express_company: String,
-    /// 参数：pickup_code，取件码
-    pub pickup_code: String,
-    /// 参数：delivery_address，送达地址文本
-    pub delivery_address: String,
-    /// 参数：receiver_name，收件人姓名
-    pub receiver_name: String,
-    /// 参数：receiver_phone，收件人手机号
-    pub receiver_phone: String,
-    /// 参数：remark，备注信息
-    pub remark: Option<String>,
-    /// 参数：distance_km，距离（公里）
-    pub distance_km: Option<f64>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：PayRunnerOrderRequest，跑腿订单支付请求参数
-pub struct PayRunnerOrderRequest {
-    /// 参数：runner_order_id，跑腿订单唯一标识
-    pub runner_order_id: String,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：CancelRunnerOrderRequest，取消跑腿订单请求参数
-pub struct CancelRunnerOrderRequest {
-    /// 参数：reason，取消原因
-    pub reason: Option<String>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：ListRunnerOrdersQuery，跑腿订单列表查询参数
-pub struct ListRunnerOrdersQuery {
-    /// 参数：status，业务状态
-    pub status: Option<String>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-/// DTO定义：RunnerOrderResponse，跑腿订单响应数据
-pub struct RunnerOrderResponse {
-    /// 参数：runner_order_id，跑腿订单唯一标识
-    pub runner_order_id: String,
-    /// 参数：user_id，用户唯一标识
-    pub user_id: String,
-    /// 参数：store_id，门店唯一标识
-    pub store_id: String,
-    /// 参数：status，业务状态
-    pub status: String,
-    /// 参数：pay_status，支付状态
-    pub pay_status: String,
-    /// 参数：express_company，快递公司名称
-    pub express_company: String,
-    /// 参数：pickup_code，取件码
-    pub pickup_code: String,
-    /// 参数：delivery_address，送达地址文本
-    pub delivery_address: String,
-    /// 参数：receiver_name，收件人姓名
-    pub receiver_name: String,
-    /// 参数：receiver_phone，收件人手机号
-    pub receiver_phone: String,
-    /// 参数：remark，备注信息
-    pub remark: Option<String>,
-    /// 参数：service_fee，跑腿服务费
-    pub service_fee: i32,
-    /// 参数：distance_km，距离（公里）
-    pub distance_km: Option<f64>,
-    /// 参数：amount_payable，应付金额
-    pub amount_payable: i32,
-}
 
 fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
     Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
@@ -103,6 +30,24 @@ fn parse_user_id(headers: &HeaderMap) -> AppResult<Ulid> {
         .to_str()
         .map_err(|_| AppError::Validation("invalid x-user-id".into()))?;
     parse_ulid(value, "user_id")
+}
+
+/// API DTO -> Application Input 映射
+fn map_create_runner_order_input(
+    payload: CreateRunnerOrderRequest,
+    user_id: Ulid,
+) -> AppResult<CreateRunnerOrderInput> {
+    Ok(CreateRunnerOrderInput {
+        user_id,
+        store_id: parse_ulid(&payload.store_id, "store_id")?,
+        express_company: payload.express_company,
+        pickup_code: payload.pickup_code,
+        delivery_address: payload.delivery_address,
+        receiver_name: payload.receiver_name,
+        receiver_phone: payload.receiver_phone,
+        remark: payload.remark,
+        distance_km: payload.distance_km,
+    })
 }
 
 fn status_to_string(value: &RunnerOrderStatus) -> &'static str {
@@ -167,21 +112,8 @@ pub async fn create_runner_order(
     Json(payload): Json<CreateRunnerOrderRequest>,
 ) -> AppResult<ApiResponse<RunnerOrderResponse>> {
     let user_id = parse_user_id(&headers)?;
-    let store_id = parse_ulid(&payload.store_id, "store_id")?;
-
-    let order = get_service(&state)?
-        .create(CreateRunnerOrderInput {
-            user_id,
-            store_id,
-            express_company: payload.express_company,
-            pickup_code: payload.pickup_code,
-            delivery_address: payload.delivery_address,
-            receiver_name: payload.receiver_name,
-            receiver_phone: payload.receiver_phone,
-            remark: payload.remark,
-            distance_km: payload.distance_km,
-        })
-        .await?;
+    let input = map_create_runner_order_input(payload, user_id)?;
+    let order = get_service(&state)?.create(input).await?;
 
     Ok(ApiResponse::success(to_response(order)))
 }

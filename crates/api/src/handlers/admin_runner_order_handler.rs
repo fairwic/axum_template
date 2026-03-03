@@ -3,21 +3,11 @@
 use axum::extract::{Path, Query, State};
 use axum_application::RunnerOrderService;
 use axum_common::{ApiResponse, AppError, AppResult};
-use serde::Deserialize;
 use ulid::Ulid;
-use utoipa::ToSchema;
 
-use crate::handlers::runner_order_handler::RunnerOrderResponse;
+use crate::dtos::admin_runner_order_dto::AdminListRunnerOrdersQuery;
+use crate::dtos::runner_order_dto::RunnerOrderResponse;
 use crate::state::AppState;
-
-#[derive(Debug, Deserialize, ToSchema)]
-/// DTO定义：AdminListRunnerOrdersQuery，后台跑腿订单列表查询参数
-pub struct AdminListRunnerOrdersQuery {
-    /// 参数：store_id，门店唯一标识
-    pub store_id: String,
-    /// 参数：status，业务状态
-    pub status: Option<String>,
-}
 
 fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
     Ulid::from_string(value).map_err(|_| AppError::Validation(format!("invalid {}", field)))
@@ -33,7 +23,7 @@ fn get_service(state: &AppState) -> AppResult<RunnerOrderService> {
 }
 
 fn to_response(order: axum_domain::RunnerOrder) -> RunnerOrderResponse {
-    crate::handlers::runner_order_handler::RunnerOrderResponse {
+    RunnerOrderResponse {
         runner_order_id: order.id.to_string(),
         user_id: order.user_id.to_string(),
         store_id: order.store_id.to_string(),

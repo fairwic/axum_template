@@ -1,31 +1,15 @@
 //! Auth handlers
 
 use axum::{extract::State, Json};
-use axum_application::dtos::user_dto::{
-    PhoneSmsLoginDto, SendSmsCodeDto, UserResponse, WechatLoginDto,
-};
 use axum_common::{ApiResponse, AppError, AppResult};
 use chrono::Utc;
-use utoipa::ToSchema;
 
 use crate::auth::jwt::{encode_token, Claims};
+use crate::dtos::auth_dto::{
+    LoginResponse, PhoneSmsLoginDto, SendSmsCodeDto, SendSmsCodeResponse, UserResponse,
+    WechatLoginDto,
+};
 use crate::state::AppState;
-
-#[derive(Debug, serde::Serialize, ToSchema)]
-/// DTO定义：LoginResponse，登录响应数据
-pub struct LoginResponse {
-    /// 参数：token，认证令牌
-    pub token: String,
-    /// 参数：user，用户信息
-    pub user: UserResponse,
-}
-
-#[derive(Debug, serde::Serialize, ToSchema)]
-/// DTO定义：SendSmsCodeResponse，发送验证码响应数据
-pub struct SendSmsCodeResponse {
-    /// 参数：expires_in_secs，验证码过期秒数
-    pub expires_in_secs: u64,
-}
 
 #[utoipa::path(
     post,
