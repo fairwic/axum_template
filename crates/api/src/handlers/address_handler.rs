@@ -16,33 +16,55 @@ use crate::state::AppState;
 const USER_ID_HEADER: &str = "x-user-id";
 
 #[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：CreateAddressRequest，新增收货地址请求参数
 pub struct CreateAddressRequest {
+    /// 参数：name，名称
     pub name: String,
+    /// 参数：phone，手机号
     pub phone: String,
+    /// 参数：detail，收货地址详细信息
     pub detail: String,
+    /// 参数：lat，纬度坐标
     pub lat: Option<f64>,
+    /// 参数：lng，经度坐标
     pub lng: Option<f64>,
+    /// 参数：is_default，是否默认地址
     pub is_default: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：UpdateAddressRequest，更新收货地址请求参数
 pub struct UpdateAddressRequest {
+    /// 参数：name，名称
     pub name: String,
+    /// 参数：phone，手机号
     pub phone: String,
+    /// 参数：detail，收货地址详细信息
     pub detail: String,
+    /// 参数：lat，纬度坐标
     pub lat: Option<f64>,
+    /// 参数：lng，经度坐标
     pub lng: Option<f64>,
+    /// 参数：is_default，是否默认地址
     pub is_default: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+/// DTO定义：AddressResponse，收货地址响应数据
 pub struct AddressResponse {
+    /// 参数：address_id，收货地址唯一标识
     pub address_id: String,
+    /// 参数：name，名称
     pub name: String,
+    /// 参数：phone，手机号
     pub phone: String,
+    /// 参数：detail，收货地址详细信息
     pub detail: String,
+    /// 参数：lat，纬度坐标
     pub lat: Option<f64>,
+    /// 参数：lng，经度坐标
     pub lng: Option<f64>,
+    /// 参数：is_default，是否默认地址
     pub is_default: bool,
 }
 
@@ -86,6 +108,7 @@ fn get_service(state: &AppState) -> AppResult<AddressService> {
     responses((status = 200, body = ApiResponse<Vec<AddressResponse>>)),
     tag = "Address"
 )]
+/// 接口功能：list_addresses，查询当前用户收货地址列表
 pub async fn list_addresses(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -104,6 +127,7 @@ pub async fn list_addresses(
     responses((status = 200, body = ApiResponse<AddressResponse>)),
     tag = "Address"
 )]
+/// 接口功能：create_address，创建用户收货地址
 pub async fn create_address(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -134,6 +158,7 @@ pub async fn create_address(
     responses((status = 200, body = ApiResponse<AddressResponse>)),
     tag = "Address"
 )]
+/// 接口功能：update_address，更新收货地址信息
 pub async fn update_address(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -166,6 +191,7 @@ pub async fn update_address(
     responses((status = 200, body = ApiResponse<bool>)),
     tag = "Address"
 )]
+/// 接口功能：delete_address，删除指定收货地址
 pub async fn delete_address(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -184,6 +210,7 @@ pub async fn delete_address(
     responses((status = 200, body = ApiResponse<AddressResponse>)),
     tag = "Address"
 )]
+/// 接口功能：set_default_address，设置默认收货地址
 pub async fn set_default_address(
     State(state): State<AppState>,
     headers: HeaderMap,

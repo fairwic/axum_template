@@ -7,4 +7,5 @@ pub fn routes() -> Router<AppState> {
     Router::<AppState>::new()
         .route("/products", get(product_handler::list_products))
         .route("/products/search", get(product_handler::search_products))
+        .route("/products/:id", get(product_handler::get_product))
 }

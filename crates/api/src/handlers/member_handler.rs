@@ -4,12 +4,16 @@ use axum_common::{ApiResponse, AppResult};
 use utoipa::ToSchema;
 
 #[derive(Debug, serde::Serialize, ToSchema)]
+/// DTO定义：MemberStatusResponse，会员状态响应数据
 pub struct MemberStatusResponse {
+    /// 参数：is_member，是否会员
     pub is_member: bool,
 }
 
 #[derive(Debug, serde::Serialize, ToSchema)]
+/// DTO定义：MemberBenefitsResponse，会员权益响应数据
 pub struct MemberBenefitsResponse {
+    /// 参数：benefits，会员权益列表
     pub benefits: Vec<String>,
 }
 
@@ -19,6 +23,7 @@ pub struct MemberBenefitsResponse {
     responses((status = 200, description = "Member status", body = ApiResponse<MemberStatusResponse>)),
     tag = "Member"
 )]
+/// 接口功能：member_status，获取当前会员状态
 pub async fn member_status() -> AppResult<ApiResponse<MemberStatusResponse>> {
     let is_member = true;
     Ok(ApiResponse::success(MemberStatusResponse { is_member }))
@@ -30,6 +35,7 @@ pub async fn member_status() -> AppResult<ApiResponse<MemberStatusResponse>> {
     responses((status = 200, description = "Member benefits", body = ApiResponse<MemberBenefitsResponse>)),
     tag = "Member"
 )]
+/// 接口功能：member_benefits，获取会员权益说明
 pub async fn member_benefits() -> AppResult<ApiResponse<MemberBenefitsResponse>> {
     let benefits = vec!["3km 内免配送费".to_string(), "专属券入口".to_string()];
     Ok(ApiResponse::success(MemberBenefitsResponse { benefits }))

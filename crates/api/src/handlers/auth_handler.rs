@@ -12,13 +12,18 @@ use crate::auth::jwt::{encode_token, Claims};
 use crate::state::AppState;
 
 #[derive(Debug, serde::Serialize, ToSchema)]
+/// DTO定义：LoginResponse，登录响应数据
 pub struct LoginResponse {
+    /// 参数：token，认证令牌
     pub token: String,
+    /// 参数：user，用户信息
     pub user: UserResponse,
 }
 
 #[derive(Debug, serde::Serialize, ToSchema)]
+/// DTO定义：SendSmsCodeResponse，发送验证码响应数据
 pub struct SendSmsCodeResponse {
+    /// 参数：expires_in_secs，验证码过期秒数
     pub expires_in_secs: u64,
 }
 
@@ -29,6 +34,7 @@ pub struct SendSmsCodeResponse {
     responses((status = 200, description = "Login success", body = ApiResponse<LoginResponse>)),
     tag = "Auth"
 )]
+/// 接口功能：wechat_login，微信授权登录并签发令牌
 pub async fn wechat_login(
     State(state): State<AppState>,
     Json(payload): Json<WechatLoginDto>,
@@ -48,6 +54,7 @@ pub async fn wechat_login(
     responses((status = 200, description = "SMS code sent", body = ApiResponse<SendSmsCodeResponse>)),
     tag = "Auth"
 )]
+/// 接口功能：send_sms_code，发送短信验证码
 pub async fn send_sms_code(
     State(state): State<AppState>,
     Json(payload): Json<SendSmsCodeDto>,
@@ -69,6 +76,7 @@ pub async fn send_sms_code(
     responses((status = 200, description = "Phone SMS login success", body = ApiResponse<LoginResponse>)),
     tag = "Auth"
 )]
+/// 接口功能：phone_sms_login，手机号验证码登录并绑定微信信息
 pub async fn phone_sms_login(
     State(state): State<AppState>,
     Json(payload): Json<PhoneSmsLoginDto>,

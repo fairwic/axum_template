@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_common::{AppError, AppResult};
 use axum_domain::store::entity::Store;
 use axum_domain::store::repo::StoreRepository;
 
@@ -51,6 +51,13 @@ impl StoreService {
 
         items.sort_by(|a, b| a.distance_km.partial_cmp(&b.distance_km).unwrap());
         Ok(items)
+    }
+
+    pub async fn get_by_id(&self, store_id: ulid::Ulid) -> AppResult<Store> {
+        self.repo
+            .find_by_id(store_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("store not found".into()))
     }
 }
 

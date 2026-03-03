@@ -206,6 +206,14 @@ impl ProductRepository for InMemoryProductRepo {
         guard.insert(product.id, product.clone());
         Ok(product.clone())
     }
+
+    async fn find_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Option<Product>> {
+        let guard = self.inner.lock().await;
+        Ok(guard
+            .get(&product_id)
+            .filter(|item| item.store_id == store_id)
+            .cloned())
+    }
 }
 
 #[derive(Default)]
@@ -290,9 +298,24 @@ async fn test_products_list_and_search() {
         .body(Body::empty())
         .unwrap();
 
-    let search_res = app.oneshot(search_req).await.unwrap();
+    let search_res = app.clone().oneshot(search_req).await.unwrap();
     let search_body = to_bytes(search_res.into_body(), 1024 * 1024).await.unwrap();
     let search_value: Value = serde_json::from_slice(&search_body).unwrap();
     assert_eq!(search_value["success"], true);
     assert_eq!(search_value["data"]["items"][0]["title"], "椰子水");
+
+    let detail_req = Request::builder()
+        .method("GET")
+        .uri(format!(
+            "/api/v1/products/{}?store_id={}",
+            product.id, store_id
+        ))
+        .body(Body::empty())
+        .unwrap();
+    let detail_res = app.oneshot(detail_req).await.unwrap();
+    let detail_body = to_bytes(detail_res.into_body(), 1024 * 1024).await.unwrap();
+    let detail_value: Value = serde_json::from_slice(&detail_body).unwrap();
+    assert_eq!(detail_value["success"], true);
+    assert_eq!(detail_value["data"]["id"], product.id.to_string());
+    assert_eq!(detail_value["data"]["title"], "椰子水");
 }

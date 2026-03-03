@@ -30,19 +30,31 @@ use ulid::Ulid;
 
 #[derive(Default)]
 struct InMemoryUserRepo {
-    inner: Mutex<HashMap<String, User>>,
+    inner: Mutex<HashMap<Ulid, User>>,
 }
 
 #[async_trait]
 impl UserRepository for InMemoryUserRepo {
     async fn find_by_openid(&self, openid: &str) -> AppResult<Option<User>> {
         let guard = self.inner.lock().await;
-        Ok(guard.get(openid).cloned())
+        Ok(guard.values().find(|item| item.openid == openid).cloned())
+    }
+
+    async fn find_by_id(&self, user_id: Ulid) -> AppResult<Option<User>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&user_id).cloned())
     }
 
     async fn create(&self, user: &User) -> AppResult<User> {
         let mut guard = self.inner.lock().await;
-        guard.insert(user.openid.clone(), user.clone());
+        guard.insert(user.id, user.clone());
+        Ok(user.clone())
+    }
+
+    async fn set_current_store(&self, user_id: Ulid, store_id: Ulid) -> AppResult<User> {
+        let mut guard = self.inner.lock().await;
+        let user = guard.get_mut(&user_id).expect("user must exist");
+        user.current_store_id = Some(store_id);
         Ok(user.clone())
     }
 }
@@ -82,6 +94,11 @@ impl StoreRepository for InMemoryStoreRepo {
         let mut guard = self.inner.lock().await;
         guard.insert(store.id.to_string(), store.clone());
         Ok(store.clone())
+    }
+
+    async fn find_by_id(&self, store_id: Ulid) -> AppResult<Option<Store>> {
+        let guard = self.inner.lock().await;
+        Ok(guard.get(&store_id.to_string()).cloned())
     }
 }
 
@@ -206,7 +223,7 @@ async fn test_stores_nearby() {
     let admin_repo: Arc<dyn AdminRepository> = Arc::new(InMemoryAdminRepo::default());
     let store_repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
 
-    let user_service = UserService::new(user_repo);
+    let user_service = UserService::new(user_repo.clone());
     let admin_service = AdminService::new(admin_repo);
     let lbs: Arc<dyn axum_application::services::store_service::LbsService> =
         Arc::new(FakeLbs::default());
@@ -217,6 +234,11 @@ async fn test_stores_nearby() {
     let product_service = ProductService::new(product_repo);
     let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
     let cart_service = CartService::new(cart_repo);
+
+    let user = user_repo
+        .create(&User::new("openid-store-test".into(), None, None).unwrap())
+        .await
+        .unwrap();
 
     let store = Store::new(
         "Store A".into(),
@@ -253,10 +275,42 @@ async fn test_stores_nearby() {
         .body(Body::empty())
         .unwrap();
 
-    let res = app.oneshot(req).await.unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
     let body = to_bytes(res.into_body(), 1024 * 1024).await.unwrap();
     let value: Value = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(value["success"], true);
     assert_eq!(value["data"][0]["name"], "Store A");
+
+    let select_req = Request::builder()
+        .method("POST")
+        .uri("/api/v1/stores/select")
+        .header("content-type", "application/json")
+        .header("x-user-id", user.id.to_string())
+        .body(Body::from(
+            serde_json::json!({
+                "store_id": store.id.to_string()
+            })
+            .to_string(),
+        ))
+        .unwrap();
+    let select_res = app.clone().oneshot(select_req).await.unwrap();
+    let select_body = to_bytes(select_res.into_body(), 1024 * 1024).await.unwrap();
+    let select_value: Value = serde_json::from_slice(&select_body).unwrap();
+    assert_eq!(select_value["success"], true);
+    assert_eq!(select_value["data"]["id"], store.id.to_string());
+
+    let current_req = Request::builder()
+        .method("GET")
+        .uri("/api/v1/stores/current")
+        .header("x-user-id", user.id.to_string())
+        .body(Body::empty())
+        .unwrap();
+    let current_res = app.oneshot(current_req).await.unwrap();
+    let current_body = to_bytes(current_res.into_body(), 1024 * 1024)
+        .await
+        .unwrap();
+    let current_value: Value = serde_json::from_slice(&current_body).unwrap();
+    assert_eq!(current_value["success"], true);
+    assert_eq!(current_value["data"]["id"], store.id.to_string());
 }

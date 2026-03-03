@@ -11,8 +11,11 @@ use crate::handlers::order_handler::OrderResponse;
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：AdminListOrdersQuery，后台订单列表查询参数
 pub struct AdminListOrdersQuery {
+    /// 参数：store_id，门店唯一标识
     pub store_id: String,
+    /// 参数：status，业务状态
     pub status: Option<String>,
 }
 
@@ -84,6 +87,7 @@ fn to_response(order: axum_domain::GoodsOrder) -> OrderResponse {
     responses((status = 200, body = ApiResponse<Vec<OrderResponse>>)),
     tag = "AdminOrder"
 )]
+/// 接口功能：admin_list_orders，后台按门店与状态查询商品订单
 pub async fn admin_list_orders(
     State(state): State<AppState>,
     Query(query): Query<AdminListOrdersQuery>,
@@ -118,6 +122,7 @@ pub async fn admin_list_orders(
     responses((status = 200, body = ApiResponse<OrderResponse>)),
     tag = "AdminOrder"
 )]
+/// 接口功能：admin_accept_order，后台接单并流转商品订单状态
 pub async fn admin_accept_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
@@ -134,6 +139,7 @@ pub async fn admin_accept_order(
     responses((status = 200, body = ApiResponse<OrderResponse>)),
     tag = "AdminOrder"
 )]
+/// 接口功能：admin_dispatch_order，后台标记商品订单为配送中
 pub async fn admin_dispatch_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
@@ -150,6 +156,7 @@ pub async fn admin_dispatch_order(
     responses((status = 200, body = ApiResponse<OrderResponse>)),
     tag = "AdminOrder"
 )]
+/// 接口功能：admin_complete_order，后台完成商品订单
 pub async fn admin_complete_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,

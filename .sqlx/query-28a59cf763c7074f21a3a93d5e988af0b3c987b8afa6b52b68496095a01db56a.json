@@ -1,0 +1,101 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, store_id, category_id, title, subtitle, cover_image, images, price,\n                   original_price, stock, status, tags, created_at, updated_at\n            FROM products\n            WHERE store_id = $1 AND id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "store_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "category_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "subtitle",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "cover_image",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "images",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 7,
+        "name": "price",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "original_price",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "stock",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "tags",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "28a59cf763c7074f21a3a93d5e988af0b3c987b8afa6b52b68496095a01db56a"
+}

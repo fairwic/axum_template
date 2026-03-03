@@ -9,6 +9,7 @@ use axum_domain::cache::CacheService;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;
 use rand::Rng;
+use ulid::Ulid;
 
 #[derive(Clone)]
 pub struct UserService {
@@ -114,6 +115,17 @@ impl UserService {
 
         user = self.repo.bind_phone(user.id, phone).await?;
         Ok(user)
+    }
+
+    pub async fn get_by_id(&self, user_id: Ulid) -> AppResult<User> {
+        self.repo
+            .find_by_id(user_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("user not found".into()))
+    }
+
+    pub async fn set_current_store(&self, user_id: Ulid, store_id: Ulid) -> AppResult<User> {
+        self.repo.set_current_store(user_id, store_id).await
     }
 
     fn normalize_phone(phone: &str) -> AppResult<String> {

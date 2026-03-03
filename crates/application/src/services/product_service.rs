@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use axum_common::{AppResult, PagedResponse};
+use axum_common::{AppError, AppResult, PagedResponse};
 use axum_domain::product::entity::Product;
 use axum_domain::product::repo::ProductRepository;
 use ulid::Ulid;
@@ -40,5 +40,12 @@ impl ProductService {
     ) -> AppResult<PagedResponse<Product>> {
         let (items, total) = self.repo.search(store_id, keyword, page, page_size).await?;
         Ok(PagedResponse::new(items, total, page, page_size))
+    }
+
+    pub async fn get_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Product> {
+        self.repo
+            .find_by_id(store_id, product_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("product not found".into()))
     }
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            UPDATE users\n            SET phone = $2, updated_at = NOW()\n            WHERE id = $1\n            RETURNING id, openid, nickname, avatar, phone, is_member, created_at, updated_at\n            ",
+  "query": "\n            UPDATE users\n            SET current_store_id = $2, updated_at = NOW()\n            WHERE id = $1\n            RETURNING id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at\n            ",
   "describe": {
     "columns": [
       {
@@ -30,16 +30,21 @@
       },
       {
         "ordinal": 5,
+        "name": "current_store_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
         "name": "is_member",
         "type_info": "Bool"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -56,10 +61,11 @@
       true,
       true,
       true,
+      true,
       false,
       false,
       false
     ]
   },
-  "hash": "a66b200e7399f03d37bb8b6c08795a046a65348ed80ea1a31db87c1b16f9f358"
+  "hash": "3dd7d7fa079ab9551b0b9eb0e3eaa276aa17f0d7470df748c57c0616567d1c31"
 }

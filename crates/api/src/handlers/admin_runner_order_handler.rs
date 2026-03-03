@@ -11,8 +11,11 @@ use crate::handlers::runner_order_handler::RunnerOrderResponse;
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+/// DTO定义：AdminListRunnerOrdersQuery，后台跑腿订单列表查询参数
 pub struct AdminListRunnerOrdersQuery {
+    /// 参数：store_id，门店唯一标识
     pub store_id: String,
+    /// 参数：status，业务状态
     pub status: Option<String>,
 }
 
@@ -70,6 +73,7 @@ fn to_response(order: axum_domain::RunnerOrder) -> RunnerOrderResponse {
     responses((status = 200, body = ApiResponse<Vec<RunnerOrderResponse>>)),
     tag = "AdminRunnerOrder"
 )]
+/// 接口功能：admin_list_runner_orders，后台按门店与状态查询跑腿订单
 pub async fn admin_list_runner_orders(
     State(state): State<AppState>,
     Query(query): Query<AdminListRunnerOrdersQuery>,
@@ -103,6 +107,7 @@ pub async fn admin_list_runner_orders(
     responses((status = 200, body = ApiResponse<RunnerOrderResponse>)),
     tag = "AdminRunnerOrder"
 )]
+/// 接口功能：admin_accept_runner_order，后台接单并流转跑腿订单状态
 pub async fn admin_accept_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
@@ -119,6 +124,7 @@ pub async fn admin_accept_runner_order(
     responses((status = 200, body = ApiResponse<RunnerOrderResponse>)),
     tag = "AdminRunnerOrder"
 )]
+/// 接口功能：admin_delivered_runner_order，后台标记跑腿订单为已送达
 pub async fn admin_delivered_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,
@@ -135,6 +141,7 @@ pub async fn admin_delivered_runner_order(
     responses((status = 200, body = ApiResponse<RunnerOrderResponse>)),
     tag = "AdminRunnerOrder"
 )]
+/// 接口功能：admin_complete_runner_order，后台完成跑腿订单
 pub async fn admin_complete_runner_order(
     State(state): State<AppState>,
     Path(order_id): Path<String>,

@@ -136,6 +136,24 @@ impl ProductRepository for PgProductRepository {
         row.into_entity()
     }
 
+    async fn find_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Option<Product>> {
+        let row = sqlx::query_as!(
+            ProductModel,
+            r#"
+            SELECT id, store_id, category_id, title, subtitle, cover_image, images, price,
+                   original_price, stock, status, tags, created_at, updated_at
+            FROM products
+            WHERE store_id = $1 AND id = $2
+            "#,
+            store_id.to_string(),
+            product_id.to_string()
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        row.map(ProductModel::into_entity).transpose()
+    }
+
     async fn find_by_ids(&self, store_id: Ulid, product_ids: &[Ulid]) -> AppResult<Vec<Product>> {
         if product_ids.is_empty() {
             return Ok(vec![]);

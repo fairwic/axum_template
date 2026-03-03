@@ -20,6 +20,7 @@ fn parse_ulid(id: &str) -> AppResult<Ulid> {
     ),
     tag = "User"
 )]
+/// 接口功能：create_user，创建用户
 pub async fn create_user(
     State(state): State<AppState>,
     Json(payload): Json<CreateUserDto>,
@@ -40,6 +41,7 @@ pub async fn create_user(
     ),
     tag = "User"
 )]
+/// 接口功能：get_user，获取用户详情
 pub async fn get_user(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -57,6 +59,7 @@ pub async fn get_user(
     ),
     tag = "User"
 )]
+/// 接口功能：list_users，查询用户列表
 pub async fn list_users(State(state): State<AppState>) -> AppResult<ApiResponse<Vec<UserResponse>>> {
     let users = state.user_service.list_users().await?;
     let data = users.into_iter().map(UserResponse::from).collect();
@@ -73,6 +76,7 @@ pub async fn list_users(State(state): State<AppState>) -> AppResult<ApiResponse<
     ),
     tag = "User"
 )]
+/// 接口功能：update_user，更新用户信息
 pub async fn update_user(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -95,6 +99,7 @@ pub async fn update_user(
     ),
     tag = "User"
 )]
+/// 接口功能：delete_user，删除用户
 pub async fn delete_user(
     State(state): State<AppState>,
     Path(id): Path<String>,

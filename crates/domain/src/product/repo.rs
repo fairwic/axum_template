@@ -25,6 +25,10 @@ pub trait ProductRepository: Send + Sync {
 
     async fn create(&self, product: &Product) -> AppResult<Product>;
 
+    async fn find_by_id(&self, _store_id: Ulid, _product_id: Ulid) -> AppResult<Option<Product>> {
+        Ok(None)
+    }
+
     async fn find_by_ids(&self, _store_id: Ulid, _product_ids: &[Ulid]) -> AppResult<Vec<Product>> {
         Err(AppError::Internal("find_by_ids not implemented".into()))
     }

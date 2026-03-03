@@ -25,7 +25,7 @@ impl UserRepository for PgUserRepository {
         let row = sqlx::query_as!(
             UserModel,
             r#"
-            SELECT id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            SELECT id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
             FROM users
             WHERE openid = $1
             "#,
@@ -45,18 +45,57 @@ impl UserRepository for PgUserRepository {
         let row = sqlx::query_as!(
             UserModel,
             r#"
-            INSERT INTO users (id, openid, nickname, avatar, phone, is_member, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            INSERT INTO users (id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
             "#,
             model.id,
             model.openid,
             model.nickname,
             model.avatar,
             model.phone,
+            model.current_store_id,
             model.is_member,
             model.created_at,
             model.updated_at
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_user_repo_error)?;
+
+        row.into_entity()
+    }
+
+    async fn find_by_id(&self, user_id: Ulid) -> AppResult<Option<User>> {
+        let row = sqlx::query_as!(
+            UserModel,
+            r#"
+            SELECT id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
+            FROM users
+            WHERE id = $1
+            "#,
+            user_id.to_string()
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match row {
+            Some(model) => Ok(Some(model.into_entity()?)),
+            None => Ok(None),
+        }
+    }
+
+    async fn set_current_store(&self, user_id: Ulid, store_id: Ulid) -> AppResult<User> {
+        let row = sqlx::query_as!(
+            UserModel,
+            r#"
+            UPDATE users
+            SET current_store_id = $2, updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
+            "#,
+            user_id.to_string(),
+            store_id.to_string()
         )
         .fetch_one(&self.pool)
         .await
@@ -69,7 +108,7 @@ impl UserRepository for PgUserRepository {
         let row = sqlx::query_as!(
             UserModel,
             r#"
-            SELECT id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            SELECT id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
             FROM users
             WHERE phone = $1
             "#,
@@ -91,7 +130,7 @@ impl UserRepository for PgUserRepository {
             UPDATE users
             SET phone = $2, updated_at = NOW()
             WHERE id = $1
-            RETURNING id, openid, nickname, avatar, phone, is_member, created_at, updated_at
+            RETURNING id, openid, nickname, avatar, phone, current_store_id, is_member, created_at, updated_at
             "#,
             user_id.to_string(),
             phone
