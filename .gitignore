@@ -34,3 +34,4 @@ logs/
 coverage/
 *.profraw
 *.profdata
+.worktrees
