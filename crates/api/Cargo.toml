@@ -18,6 +18,7 @@ ulid.workspace = true
 chrono.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
+jsonwebtoken.workspace = true
 
 # test cicd
 

@@ -9,6 +9,7 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub redis: RedisConfig,
     pub cache: CacheConfig,
+    pub auth: AuthConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -45,6 +46,13 @@ pub struct CacheConfig {
     pub default_ttl_secs: u64,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuthConfig {
+    pub jwt_secret: String,
+    #[serde(default = "default_jwt_ttl_secs")]
+    pub jwt_ttl_secs: u64,
+}
+
 fn default_max_connections() -> u32 {
     20
 }
@@ -65,6 +73,9 @@ fn default_redis_max_connections() -> usize {
 }
 fn default_cache_ttl_secs() -> u64 {
     300
+}
+fn default_jwt_ttl_secs() -> u64 {
+    7 * 24 * 3600
 }
 
 impl DatabaseConfig {
