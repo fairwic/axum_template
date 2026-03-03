@@ -24,21 +24,13 @@
 
 ## 快速开始
 
-### 1. 准备数据库
-```bash
-docker compose up -d
-```
+1. 启动依赖：`docker compose up -d`
+2. 安装 SQLx CLI（首次）：`cargo install sqlx-cli --no-default-features --features postgres`
+3. 迁移：`cargo sqlx migrate run`
+4. 生成离线元数据：`cargo sqlx prepare --workspace`
+5. 启动服务：`cargo run -p axum-server`
 
-### 2. 迁移
-```bash
-cargo install sqlx-cli --no-default-features --features postgres
-sqlx migrate run
-```
-
-### 3. 启动服务
-```bash
-cargo run -p axum-server
-```
+详细说明见 `docs/BOOTSTRAP.md`。
 
 访问：
 - Swagger UI: `http://localhost:3000/swagger-ui`
@@ -57,3 +49,6 @@ curl http://localhost:3000/api/v1/users/<id>
 
 ## 环境变量
 参考 `.env.example`。
+
+## 项目约定
+基础规范见 `docs/BASE_CONVENTIONS.md`。
