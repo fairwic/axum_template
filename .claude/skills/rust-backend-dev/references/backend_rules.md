@@ -31,6 +31,7 @@
 - `crates/application/`：Application（Service、用例 DTO、事务边界、权限检查入口）
 - `crates/domain/`：Domain（Entity/VO、DomainError、Ports Traits）
 - `crates/infrastructure/`：Infrastructure（repo/cache/mq 实现、sqlx models、配置/观测落地）
+- `core-kernel`：核心错误模型与基础类型（跨层共享）。
 - `crates/common/`（可选，极克制）：分页结构、通用错误基类、时间/ID trait
 
 ### 1.2 模块声明规则（必须）
@@ -47,6 +48,12 @@
 - Application 用例 DTO：`crates/application/src/dtos/<business>_dto.rs`
 - 同一业务 DTO 必须聚合在一个 DTO 文件中
 - **禁止**在 handler/service 内联定义 DTO
+
+### 1.4 进程职责规
+
+- `axum-server` 仅承担 HTTP API 职责。
+- `axum-worker` 承担定时任务调度职责（自动关单、自动接单等）。
+- 两个进程共享 `crates/runtime` 的装配逻辑，避免入口代码分叉。
 
 ---
 
@@ -180,12 +187,14 @@ Repository 方法命名（强制）：
 
 Request DTO（必须）：
 
+- 必须有字段涵义注释
 - `derive(Validate, ToSchema)`
 - 有 `#[validate(...)]`，中文错误消息
 - Handler 必须 `ValidatedJson<T>`
 
 Response DTO（必须）：
 
+- 必须有字段涵义注释
 - `derive(Serialize, ToSchema)`
 - 必须提供 `from_domain()` 聚合多个 Entity（需要时）
 - 简单可 `impl From<Entity>`
@@ -364,3 +373,50 @@ Request DTO：Validate + ToSchema；Response DTO：Serialize + ToSchema
 公共 API 有 OpenAPI 注解（中文 + 全响应码 + security）
 通过 cargo fmt/clippy/test
 核心逻辑有单元测试，repo 有集成测试
+
+## 16 【补充】错误模型推荐形态（生产级：稳定错误码 + 分层适配）
+
+> 目标：内层（domain/application）完全框架无关；外层（api/infra）做适配。
+> 约束：对外 message 中文、稳定；内部 detail 仅日志；支持 trace_id 贯穿。
+
+---
+
+### 1) 错误模型分层（必须）
+
+- **DomainError**（domain）
+  - 表达：领域规则失败/不变式被破坏/状态不合法
+  - 不包含：HTTP/DB/框架类型
+- **AppError**（application）
+  - 表达：用例层错误（含权限、资源不存在、冲突、外部依赖失败等）
+  - 可包装 DomainError
+  - 不包含：axum/sqlx 类型
+- **Adapter Errors**（外层适配）
+  - api：`AppError -> (StatusCode, ApiResponse)`
+  - infra：`sqlx::Error/redis/mq -> AppError`
+
+---
+
+### 2) 推荐字段（必须）
+
+#### 2.1 稳定错误码（对外）
+
+- `code: &'static str` 或 `enum ErrorCode`
+- **必须稳定**（可用于前端/客户端逻辑与告警聚合）
+- 示例：`OK`, `VALIDATION_FAILED`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `INTERNAL`, `UPSTREAM_TIMEOUT`, `DB_ERROR`
+
+#### 2.2 对外消息（中文）
+
+- `message: Cow<'static, str>` 或 `String`
+- **必须中文**
+- **禁止**暴露内部堆栈/SQL/连接信息
+
+#### 2.3 内部详情（仅日志）
+
+- `detail: Option<String>`
+- 记录：底层错误、上下文（比如 sqlx 原始错误）
+- **禁止**返回给客户端（除非明确 debug 环境并做脱敏）
+
+#### 2.4 可观测字段
+
+- `trace_id: Option<String>`（可从 request/span 获取）
+- `ctx: Vec<(key, value)>` 或结构化字段（用于日志）
