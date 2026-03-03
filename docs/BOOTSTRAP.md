@@ -27,6 +27,14 @@ export SQLX_OFFLINE=true
 cargo build
 ```
 
+**模板复制后必改项清单**
+1. `Cargo.toml` 的项目描述与仓库地址。
+2. `bins/server/Cargo.toml` 的 crate 名称与描述。
+3. `README.md` 标题与示例命令中的项目名。
+4. `docker-compose.yml` 的 service/container 名称与端口。
+5. `.env.example` 的前缀与默认端口。
+6. 全局搜索替换关键词：`axum_template`、`axum-`、`testdb`、`postgres123`。
+
 **常见问题与修复**
 1. 提示 `DATABASE_URL` 未设置：先 `export DATABASE_URL=...`。
 2. 提示 `no cached data for this query`：执行 `cargo sqlx prepare --workspace`。
