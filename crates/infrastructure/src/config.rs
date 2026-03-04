@@ -67,22 +67,12 @@ pub enum LbsProvider {
     Noop,
 }
 
-#[derive(Debug, Deserialize, Clone, Copy, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum ApiErrorMode {
-    #[default]
-    LegacyOk,
-    Restful,
-}
-
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct RuntimeConfig {
     #[serde(default)]
     pub cache_provider: CacheProvider,
     #[serde(default)]
     pub lbs_provider: LbsProvider,
-    #[serde(default)]
-    pub api_error_mode: ApiErrorMode,
 }
 
 #[derive(Debug, Deserialize, Clone)]

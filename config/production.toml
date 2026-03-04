@@ -15,4 +15,3 @@ default_ttl_secs = 300
 [runtime]
 cache_provider = "redis"
 lbs_provider = "noop"
-api_error_mode = "legacy_ok"
