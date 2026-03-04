@@ -10,5 +10,6 @@ pub mod router;
 pub mod routes;
 pub mod state;
 
+pub use error::{configure_api_error_mode, ApiErrorMode};
 pub use router::create_router;
 pub use state::AppState;

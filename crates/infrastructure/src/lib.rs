@@ -42,7 +42,7 @@ pub mod external {
     pub mod wechat_auth_client;
 }
 
-pub use config::{AppConfig, CacheProvider, LbsProvider, RuntimeConfig};
+pub use config::{ApiErrorMode, AppConfig, CacheProvider, LbsProvider, RuntimeConfig};
 pub use external::sms_gateway::LogSmsGateway;
 pub use external::wechat_auth_client::WechatMiniProgramClient;
 pub use memory::cache::MemoryCacheService;

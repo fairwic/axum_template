@@ -7,8 +7,8 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-use axum_api::create_router;
-use axum_infrastructure::AppConfig;
+use axum_api::{configure_api_error_mode, create_router, ApiErrorMode as ApiHttpErrorMode};
+use axum_infrastructure::{ApiErrorMode as RuntimeApiErrorMode, AppConfig};
 use axum_runtime::build_app_state;
 
 #[tokio::main]
@@ -19,6 +19,12 @@ async fn main() -> anyhow::Result<()> {
 
     let config = AppConfig::load().context("Failed to load configuration")?;
     tracing::info!(host = %config.server.host, port = %config.server.port, "Configuration loaded");
+
+    let api_error_mode = match config.runtime.api_error_mode {
+        RuntimeApiErrorMode::LegacyOk => ApiHttpErrorMode::LegacyOk,
+        RuntimeApiErrorMode::Restful => ApiHttpErrorMode::Restful,
+    };
+    configure_api_error_mode(api_error_mode);
 
     let pool = PgPoolOptions::new()
         .max_connections(config.database.max_connections)

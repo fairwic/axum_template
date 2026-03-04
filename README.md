@@ -53,6 +53,9 @@ curl http://localhost:3000/api/v1/users/<id>
 
 ## 环境变量
 参考 `.env.example`。
+错误响应状态码策略可通过 `config/*.toml` 的 `runtime.api_error_mode` 配置：
+- `legacy_ok`（默认，兼容历史行为）
+- `restful`（REST 风格状态码）
 
 ## 项目约定
 基础规范见 `docs/BASE_CONVENTIONS.md`。

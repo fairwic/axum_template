@@ -35,6 +35,9 @@ API Path：`/api/v1/...`。
 **错误与响应规范**
 统一使用 `ApiResponse` 与 `AppError`。
 业务校验失败返回 `success=false`，状态码保持 200，错误码在 body 中体现。
+可通过 `runtime.api_error_mode` 切换映射策略：
+- `legacy_ok`：延续兼容策略（Validation/NotFound/Domain 仍返回 200）。
+- `restful`：使用 REST 风格状态码（如 400/404/409/422）。
 示例响应：
 ```
 {
