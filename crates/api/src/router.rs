@@ -2,30 +2,16 @@
 
 use axum::{middleware, routing::get, Json, Router};
 
-use crate::auth::middleware::{require_admin_auth, require_user_auth};
+use crate::auth::middleware::require_user_auth;
 use crate::handlers::health_handler;
 use crate::openapi::openapi;
-use crate::routes::{
-    address, admin_auth, admin_category, admin_config, admin_order, admin_product,
-    admin_runner_order, admin_store, auth, cart, category, config, member, order, product,
-    runner_order, store,
-};
+use crate::routes::address;
 use crate::state::AppState;
 
 pub fn create_router(state: AppState) -> Router {
-    let public_api_routes = Router::<AppState>::new()
-        .merge(auth::routes())
-        .merge(config::routes())
-        .merge(store::public_routes())
-        .merge(category::routes())
-        .merge(product::routes());
+    let public_api_routes = Router::<AppState>::new().merge(address::routes());
     let protected_api_routes = Router::<AppState>::new()
-        .merge(member::routes())
         .merge(address::routes())
-        .merge(store::protected_routes())
-        .merge(cart::routes())
-        .merge(order::routes())
-        .merge(runner_order::routes())
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             require_user_auth,
@@ -33,22 +19,6 @@ pub fn create_router(state: AppState) -> Router {
     let api_routes = Router::<AppState>::new()
         .merge(public_api_routes)
         .merge(protected_api_routes);
-
-    let admin_public_routes = Router::<AppState>::new().merge(admin_auth::routes());
-    let admin_protected_routes = Router::<AppState>::new()
-        .merge(admin_config::routes())
-        .merge(admin_store::routes())
-        .merge(admin_category::routes())
-        .merge(admin_product::routes())
-        .merge(admin_order::routes())
-        .merge(admin_runner_order::routes())
-        .route_layer(middleware::from_fn_with_state(
-            state.clone(),
-            require_admin_auth,
-        ));
-    let admin_routes = Router::<AppState>::new()
-        .merge(admin_public_routes)
-        .merge(admin_protected_routes);
 
     let openapi_route = Router::<AppState>::new()
         .route("/api-docs/openapi.json", get(|| async { Json(openapi()) }));
@@ -90,6 +60,5 @@ pub fn create_router(state: AppState) -> Router {
         .merge(swagger_ui_route)
         .route("/health", get(health_handler::health_check))
         .nest("/api/v1", api_routes)
-        .nest("/api/admin/v1", admin_routes)
         .with_state(state)
 }

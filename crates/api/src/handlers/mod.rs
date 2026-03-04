@@ -1,17 +1,2 @@
 pub mod address_handler;
-pub mod admin_auth_handler;
-pub mod admin_category_handler;
-pub mod admin_order_handler;
-pub mod admin_product_handler;
-pub mod admin_runner_order_handler;
-pub mod admin_store_handler;
-pub mod auth_handler;
-pub mod cart_handler;
-pub mod category_handler;
-pub mod config_handler;
 pub mod health_handler;
-pub mod member_handler;
-pub mod order_handler;
-pub mod product_handler;
-pub mod runner_order_handler;
-pub mod store_handler;

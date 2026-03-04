@@ -1,17 +1,1 @@
 pub mod address;
-pub mod admin_auth;
-pub mod admin_category;
-pub mod admin_config;
-pub mod admin_order;
-pub mod admin_product;
-pub mod admin_runner_order;
-pub mod admin_store;
-pub mod auth;
-pub mod cart;
-pub mod category;
-pub mod config;
-pub mod member;
-pub mod order;
-pub mod product;
-pub mod runner_order;
-pub mod store;
