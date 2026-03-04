@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use axum_application::snapshot::ingest_service::IngestService;
 use axum_application::AddressService;
 use axum_core_kernel::{AppError, AppResult};
 use tokio::sync::RwLock;
@@ -34,6 +35,7 @@ impl Default for BizConfig {
 #[derive(Clone)]
 pub struct AppState {
     pub address_service: Option<Arc<AddressService>>,
+    pub ingest_service: Option<Arc<IngestService>>,
     pub jwt_secret: String,
     pub jwt_ttl_secs: u64,
     pub sms_code_ttl_secs: u64,
@@ -56,6 +58,7 @@ impl AppState {
     ) -> Self {
         Self {
             address_service: Some(Arc::new(address_service)),
+            ingest_service: None,
             jwt_secret,
             jwt_ttl_secs,
             sms_code_ttl_secs,
@@ -71,10 +74,25 @@ impl AppState {
     ) -> Self {
         Self {
             address_service: None,
+            ingest_service: None,
             jwt_secret,
             jwt_ttl_secs,
             sms_code_ttl_secs,
             biz_config: Arc::new(RwLock::new(BizConfig::default())),
         }
+    }
+
+    pub fn with_ingest_service(mut self, service: IngestService) -> Self {
+        self.ingest_service = Some(Arc::new(service));
+        self
+    }
+}
+
+impl axum::extract::FromRef<AppState> for Arc<IngestService> {
+    fn from_ref(state: &AppState) -> Self {
+        state
+            .ingest_service
+            .clone()
+            .expect("ingest_service is not configured")
     }
 }

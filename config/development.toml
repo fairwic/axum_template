@@ -15,3 +15,10 @@ default_ttl_secs = 300
 [runtime]
 cache_provider = "memory"
 lbs_provider = "noop"
+
+[scylla]
+contact_points = ["localhost:9042"]
+keyspace = "catalog"
+product_table_prefix = "product_by_id"
+shop_table_prefix = "shop_by_id"
+auto_create = true

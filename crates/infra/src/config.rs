@@ -16,6 +16,30 @@ pub struct AppConfig {
     pub wechat: WechatConfig,
     #[serde(default)]
     pub sms: SmsConfig,
+    #[serde(default)]
+    pub scylla: ScyllaConfig,
+    #[serde(default)]
+    pub s3: S3Config,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct ScyllaConfig {
+    pub contact_points: Vec<String>,
+    pub keyspace: String,
+    pub product_table_prefix: String,
+    pub shop_table_prefix: String,
+    pub auto_create: bool,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct S3Config {
+    pub bucket: Option<String>,
+    pub region: String,
+    pub access_key: Option<String>,
+    pub secret_key: Option<String>,
+    pub endpoint: Option<String>,
+    pub force_path_style: bool,
+    pub prefix: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

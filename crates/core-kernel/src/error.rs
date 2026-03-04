@@ -28,6 +28,18 @@ pub enum DomainError {
 
     #[error("基础设施错误: {0}")]
     InfrastructureError(String),
+
+    #[error("找不到对应平台适配器: {0}")]
+    AdapterNotFound(String),
+
+    #[error("无效的数据载荷: {0}")]
+    InvalidPayload(String),
+
+    #[error("存储错误: {0}")]
+    Storage(String),
+
+    #[error("事件发布错误: {0}")]
+    EventPublish(String),
 }
 
 /// Application-level unified error.

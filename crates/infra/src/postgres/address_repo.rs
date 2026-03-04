@@ -1,10 +1,10 @@
 //! Postgres implementation for AddressRepository
 
 use async_trait::async_trait;
-use axum_infra_common::map_sqlx_error;
 use axum_core_kernel::AppResult;
 use axum_domain::address::repo::AddressRepository;
 use axum_domain::Address;
+use axum_infra_common::map_sqlx_error;
 use sqlx::PgPool;
 use ulid::Ulid;
 

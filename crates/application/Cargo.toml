@@ -13,8 +13,8 @@ chrono.workspace = true
 bcrypt.workspace = true
 async-trait.workspace = true
 rand.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 async-trait.workspace = true
 tokio.workspace = true
-serde_json.workspace = true

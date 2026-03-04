@@ -28,6 +28,10 @@ fn map_error_status(error: &AppError) -> StatusCode {
             axum_core_kernel::DomainError::InfrastructureError(_) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
+            axum_core_kernel::DomainError::AdapterNotFound(_) => StatusCode::NOT_FOUND,
+            axum_core_kernel::DomainError::InvalidPayload(_) => StatusCode::BAD_REQUEST,
+            axum_core_kernel::DomainError::Storage(_)
+            | axum_core_kernel::DomainError::EventPublish(_) => StatusCode::INTERNAL_SERVER_ERROR,
         },
         AppError::Database(_) | AppError::Internal(_) | AppError::Serialization(_) => {
             StatusCode::INTERNAL_SERVER_ERROR
@@ -69,6 +73,16 @@ impl IntoResponse for ApiError {
                 }
                 axum_core_kernel::DomainError::InfrastructureError(msg) => {
                     ("INFRASTRUCTURE_ERROR", msg.as_str())
+                }
+                axum_core_kernel::DomainError::AdapterNotFound(msg) => {
+                    ("ADAPTER_NOT_FOUND", msg.as_str())
+                }
+                axum_core_kernel::DomainError::InvalidPayload(msg) => {
+                    ("INVALID_PAYLOAD", msg.as_str())
+                }
+                axum_core_kernel::DomainError::Storage(msg) => ("STORAGE_ERROR", msg.as_str()),
+                axum_core_kernel::DomainError::EventPublish(msg) => {
+                    ("EVENT_PUBLISH_ERROR", msg.as_str())
                 }
             },
             AppError::Database(_) | AppError::Internal(_) | AppError::Serialization(_) => {

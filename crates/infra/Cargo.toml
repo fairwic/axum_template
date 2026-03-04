@@ -19,3 +19,8 @@ chrono.workspace = true
 config.workspace = true
 async-trait.workspace = true
 fred.workspace = true
+aws-config = "1.1"
+aws-sdk-s3 = "1.20"
+scylla = "0.12"
+rdkafka = { version = "0.37", features = ["cmake-build"] }
+async-nats = "0.34"
