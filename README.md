@@ -1,190 +1,102 @@
-# Ministore Backend
+# Rust Web Backend Scaffold
 
-小卖部小程序后端（Rust + Axum），提供：
+基于 Rust 和 Axum 构建的 Web 后端脚手架，采用 DDD（领域驱动设计）架构与 Workspace 多模块工程组织形式。
 
-- C 端 API：`/api/v1/*`
-- 管理端 API：`/api/admin/v1/*`
-- API 进程：`axum-server`
-- 定时任务进程：`axum-worker`
+## 特性
 
-项目采用 workspace 多 crate + DDD 分层结构（`api` / `application` / `domain` / `infrastructure`）。
+- 框架层: Axum + Tokio
+- 架构层: Domain-Driven Design (DDD) 四层分层架构
+- 工程组织: Cargo Workspace 多包管理
+- 数据库: PostgreSQL (SQLx 构建，支持编译期查询分析)
+- 缓存组件: Redis (Fred)
+- 接口文档: Utoipa OpenAPI + Swagger UI 集成
+- 安全认证: JWT 解析与拦截控制
+- 错误管理: 统一业务系统模型定义与 API 封套转换
 
-## 功能概览
-
-- 认证与用户
-  - 微信登录（`code -> openid`，需配置微信参数）
-  - 手机号验证码登录
-  - 会员状态查询
-- C 端业务
-  - 门店：附近门店、切换当前门店
-  - 商品：类目、列表、搜索、详情
-  - 地址：增删改查、设为默认地址
-  - 购物车：查询、加购、改数量、删除、清空
-  - 商品订单：预览、创建、支付、列表、详情、取消、再来一单
-  - 跑腿订单：创建、支付、列表、详情、取消
-- 管理端业务
-  - 管理员登录（平台/门店角色）
-  - 门店/类目/商品管理
-  - 全局业务配置读写
-  - 商品订单与跑腿订单流转（接单/配送/完成）
-- Worker 调度任务
-  - 自动关闭超时未支付订单
-  - 自动接单（按配置超时触发）
-
-## 技术栈
-
-- Rust 2021, Axum, Tokio
-- PostgreSQL + SQLx（离线模式）
-- Redis（可选缓存实现）
-- Utoipa OpenAPI + Swagger UI
-
-## 目录结构
+## 目录分布
 
 ```text
 ├── crates/
-│   ├── api/            # HTTP 路由 / Handler / 鉴权 / OpenAPI
-│   ├── application/    # Service / UseCase / DTO
-│   ├── domain/         # Entity / Repository Trait / 领域规则
-│   ├── infrastructure/ # Postgres / Redis / 外部服务实现
-│   ├── runtime/        # AppState 装配与 worker 调度
-│   ├── core-kernel/    # 核心错误与基础类型
-│   ├── common-api/     # API 响应模型（ApiResponse/PagedResponse）
-│   ├── common-infra/   # 基础设施公共适配（如 SQLx 错误映射）
+│   ├── api/            # HTTP Controller 路由拦截、接口签名定义及鉴权
+│   ├── application/    # 业务层 (Service)、领域对象调度与 DTO 格式转化
+│   ├── domain/         # 原子逻辑、实体模型 (Entity) 及仓库依赖抽象 (Trait)
+│   ├── infra/          # Db/Cache 及第三方服务驱动层的向下实现
+│   ├── runtime/        # 生命周期 AppState 全局依赖编排与上下文装配
+│   ├── core-kernel/    # 异常错误总线设计等全局基建
+│   ├── api-common/     # 接口外壳与端侧结构化响应结构规范 (ApiResponse)
+│   ├── infra-common/   # 基础设施共用支持代码库
 ├── bins/
-│   ├── server/         # axum-server 入口
-│   └── worker/         # axum-worker 入口
-├── config/             # default/development/production 配置
-└── migrations/         # SQL 迁移
+│   ├── server/         # HTTP 网关入口与 API 进程启动执行
+│   └── worker/         # 异步作业与调度后台守护进程
+├── config/             # 多环境隔离配置文件存放
+└── migrations/         # 版本化演进 SQL 结构迁移数据
 ```
 
-## 快速开始
+## 本地启动
 
-1. 启动依赖
+### 依靠组件构建
+
+拉起服务栈容器环境：
 
 ```bash
 docker compose up -d
 ```
 
-错误响应采用统一 REST 风格状态码（如 400/404/409/422）。
-错误模型来自 `core-kernel`，响应封套来自 `common-api`。
-
-2. 准备环境变量（可选）
+初始化基础环境变量描述文件：
 
 ```bash
 cp .env.example .env
 ```
 
-3. 安装 SQLx CLI（首次）
+### 数据库化解
+
+保证 SQLx CLI 开发扩展可用：
 
 ```bash
 cargo install sqlx-cli --no-default-features --features postgres
 ```
 
-4. 执行迁移
+连接应用所需载体执行结构：
 
 ```bash
 export DATABASE_URL=postgres://postgres:postgres123@localhost:5432/testdb
 cargo sqlx migrate run
 ```
 
-5. 生成 SQLx 离线元数据
+同步 SQLx 检查层离线映射：
 
 ```bash
 cargo sqlx prepare --workspace
 ```
 
-6. 启动 API 服务
+### 进程唤醒
+
+前置守护进程节点启动（API）：
 
 ```bash
 cargo run -p axum-server
 ```
 
-7. 启动 Worker（新终端，可选）
+旁路任务节点启动（后台任务）：
 
 ```bash
 cargo run -p axum-worker
 ```
 
-## 访问入口
+## 测试地址
 
-- Swagger UI: `http://localhost:3000/swagger-ui`
-- OpenAPI JSON: `http://localhost:3000/api-docs/openapi.json`
-- Health: `http://localhost:3000/health`
+- **Swagger UI 交互端**: `http://localhost:3000/swagger-ui`
+- **通用健康流检测**: `http://localhost:3000/health`
+- **解析 JSON 原档**: `http://localhost:3000/api-docs/openapi.json`
 
-## 接口前缀与鉴权
+## 代码提交制约
 
-- C 端公开接口：`/api/v1/auth/*`、`/api/v1/config`、`/api/v1/stores/nearby`、`/api/v1/categories`、`/api/v1/products*`
-- C 端鉴权接口：`/api/v1/member*`、`/api/v1/addresses*`、`/api/v1/cart*`、`/api/v1/orders*`、`/api/v1/runner_orders*`、`/api/v1/stores/current|select`
-- 管理端公开接口：`/api/admin/v1/auth/login`
-- 管理端鉴权接口：`/api/admin/v1/*`（除登录外）
-
-鉴权方式：`Authorization: Bearer <token>`。
-
-## 环境变量
-
-配置加载顺序：`config/default.toml` -> `config/{RUN_MODE}.toml` -> `APP__` 前缀环境变量覆盖。
-
-常用变量：
-
-- `RUN_MODE`：运行环境，默认 `development`
-- `DATABASE_URL`：SQLx CLI 使用（迁移/prepare）
-- `APP__DATABASE__URL`：运行时数据库连接串覆盖
-- `APP__REDIS__URL`：Redis 连接串
-- `APP__RUNTIME__CACHE_PROVIDER`：`memory` 或 `redis`
-- `APP__AUTH__JWT_SECRET`：JWT 签名密钥
-- `APP__WECHAT__APP_ID` / `APP__WECHAT__APP_SECRET`：微信登录参数
-- `RUST_LOG`：日志级别
-
-说明：
-
-- 默认短信网关为日志实现，验证码会输出到服务日志中（开发环境）。
-- 若未配置微信 `APP_ID/APP_SECRET`，微信登录接口会返回配置错误。
-
-## 常用开发命令
+确保合并节点未被挂起，触发前核实执行安全要求：
 
 ```bash
-cargo check --workspace
-cargo test --workspace
-cargo fmt --all
 cargo clippy --workspace --all-targets --all-features
+cargo fmt --all
 ```
 
-SQLx 离线检查：
-
-```bash
-cargo sqlx prepare --workspace --check
-SQLX_OFFLINE=true cargo check --workspace
-```
-
-## 相关文档
-
-- 启动与排查清单：`docs/BOOTSTRAP.md`
-- 分层与代码规范：`docs/BASE_CONVENTIONS.md`
-- 开发指南：`DEVELOPMENT_GUIDE.md`
-
-## CI/CD 发布门
-
-当前发布链路是分层门禁：
-
-1. 质量门：`verify` + `sqlx-offline` + `security` + `coverage`
-2. 构建门：`main` 分支 push 后执行 `build-and-push`
-3. 部署门：`deploy-canary`（`production` 环境审批） -> `deploy-stable`
-4. 回滚门：发布失败自动触发 `rollback-on-failure`，也支持 `workflow_dispatch` 手动回滚
-
-覆盖率基线先聚焦关键路径：
-
-- 目标 crate：`axum-application`、`axum-domain`
-- 基线：`lines >= 70`、`functions >= 60`
-- 本地命令：`./scripts/ci/coverage-baseline.sh`
-
-发布相关脚本：
-
-- `scripts/deploy/deploy_canary.sh`
-- `scripts/deploy/promote_stable.sh`
-- `scripts/deploy/rollback.sh`
-
-上线前请在 GitHub 仓库配置：
-
-- `Environment: production`（开启 required reviewers，实现审批）
-- Secrets：`SSH_PRIVATE_KEY`、`SSH_USER`、`SSH_HOST`、`SERVER_APP_PATH`
-- Variables（按需）：`DEPLOY_COMPOSE_FILE`、`DEPLOY_CANARY_SERVICE`、`DEPLOY_STABLE_SERVICE`、`DEPLOY_CANARY_HEALTHCHECK_URL`、`DEPLOY_STABLE_HEALTHCHECK_URL`、`DEPLOY_HEALTHCHECK_RETRIES`、`DEPLOY_HEALTHCHECK_INTERVAL_SECONDS`
+严格保持领域向下依赖约束：API 层只能请求 Application，不可越阶跨越。
+基础 SQL 查询存在跨级绑定要求，离线检查在 CI 中通过环境变量 `SQLX_OFFLINE=true` 控制。
