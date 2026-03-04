@@ -5,6 +5,16 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      rollback_service:
+        description: "手动回滚服务名（留空使用默认稳定服务）"
+        required: false
+        default: ""
+      rollback_image:
+        description: "手动回滚镜像（留空使用上次发布快照）"
+        required: false
+        default: ""
 
 env:
   BIN_NAME: axum-server
@@ -15,6 +25,7 @@ jobs:
   verify:
     name: Verify (fmt/clippy/test)
     runs-on: ubuntu-24.04
+    if: github.event_name != 'workflow_dispatch'
 
     steps:
       - name: Checkout
@@ -44,6 +55,7 @@ jobs:
   sqlx-offline:
     name: SQLx Offline Guard
     runs-on: ubuntu-24.04
+    if: github.event_name != 'workflow_dispatch'
 
     services:
       postgres:
@@ -90,6 +102,7 @@ jobs:
   security:
     name: Security (audit/deny)
     runs-on: ubuntu-24.04
+    if: github.event_name != 'workflow_dispatch'
 
     steps:
       - name: Checkout
@@ -148,10 +161,38 @@ jobs:
       - name: Cargo deny policy
         run: cargo deny check bans licenses sources
 
+  coverage:
+    name: Coverage Baseline (application/domain)
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+          components: llvm-tools-preview
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Coverage baseline gate
+        env:
+          COVERAGE_MIN_LINES: "70"
+          COVERAGE_MIN_FUNCTIONS: "60"
+        run: ./scripts/ci/coverage-baseline.sh
+
   build-and-push:
     name: Build & Push Image (GHCR)
     runs-on: ubuntu-24.04
-    needs: [verify, sqlx-offline, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [verify, sqlx-offline, security, coverage]
     permissions:
       contents: read
       packages: write
@@ -221,13 +262,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy on Server (docker compose pull + up)
+  deploy-canary:
+    name: Deploy Canary (approval)
     runs-on: ubuntu-24.04
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -238,14 +287,119 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF2'
-            set -euo pipefail
-            cd "${SERVER_APP_PATH}"
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | sed -n '1,10p'
-          EOF2
+      - name: Canary rollout
+        run: ./scripts/deploy/deploy_canary.sh
         env:
+          DEPLOY_SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.SSH_HOST }}
           SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}
+          DEPLOY_COMPOSE_FILE: ${{ vars.DEPLOY_COMPOSE_FILE || 'docker-compose.yml' }}
+          DEPLOY_CANARY_SERVICE: ${{ vars.DEPLOY_CANARY_SERVICE || 'axum-server-canary' }}
+          DEPLOY_CANARY_HEALTHCHECK_URL: ${{ vars.DEPLOY_CANARY_HEALTHCHECK_URL }}
+          DEPLOY_HEALTHCHECK_RETRIES: ${{ vars.DEPLOY_HEALTHCHECK_RETRIES }}
+          DEPLOY_HEALTHCHECK_INTERVAL_SECONDS: ${{ vars.DEPLOY_HEALTHCHECK_INTERVAL_SECONDS }}
+          DEPLOY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+
+  deploy-stable:
+    name: Promote Stable
+    runs-on: ubuntu-24.04
+    needs: deploy-canary
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Promote stable service
+        run: ./scripts/deploy/promote_stable.sh
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.SSH_HOST }}
+          SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}
+          DEPLOY_COMPOSE_FILE: ${{ vars.DEPLOY_COMPOSE_FILE || 'docker-compose.yml' }}
+          DEPLOY_STABLE_SERVICE: ${{ vars.DEPLOY_STABLE_SERVICE || 'axum-server' }}
+          DEPLOY_STABLE_HEALTHCHECK_URL: ${{ vars.DEPLOY_STABLE_HEALTHCHECK_URL }}
+          DEPLOY_HEALTHCHECK_RETRIES: ${{ vars.DEPLOY_HEALTHCHECK_RETRIES }}
+          DEPLOY_HEALTHCHECK_INTERVAL_SECONDS: ${{ vars.DEPLOY_HEALTHCHECK_INTERVAL_SECONDS }}
+          DEPLOY_IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+
+  rollback-on-failure:
+    name: Rollback On Failure
+    runs-on: ubuntu-24.04
+    needs: [deploy-canary, deploy-stable]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && always() && (needs.deploy-canary.result == 'failure' || needs.deploy-stable.result == 'failure')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback canary
+        if: needs.deploy-canary.result == 'failure'
+        run: ./scripts/deploy/rollback.sh
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.SSH_HOST }}
+          SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}
+          DEPLOY_COMPOSE_FILE: ${{ vars.DEPLOY_COMPOSE_FILE || 'docker-compose.yml' }}
+          DEPLOY_ROLLBACK_SERVICE: ${{ vars.DEPLOY_CANARY_SERVICE || 'axum-server-canary' }}
+
+      - name: Rollback stable
+        if: needs.deploy-stable.result == 'failure'
+        run: ./scripts/deploy/rollback.sh
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.SSH_HOST }}
+          SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}
+          DEPLOY_COMPOSE_FILE: ${{ vars.DEPLOY_COMPOSE_FILE || 'docker-compose.yml' }}
+          DEPLOY_ROLLBACK_SERVICE: ${{ vars.DEPLOY_STABLE_SERVICE || 'axum-server' }}
+
+  rollback-manual:
+    name: Manual Rollback
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Rollback by dispatch input
+        run: ./scripts/deploy/rollback.sh
+        env:
+          DEPLOY_SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_SSH_HOST: ${{ secrets.SSH_HOST }}
+          SERVER_APP_PATH: ${{ secrets.SERVER_APP_PATH }}
+          DEPLOY_COMPOSE_FILE: ${{ vars.DEPLOY_COMPOSE_FILE || 'docker-compose.yml' }}
+          DEPLOY_ROLLBACK_SERVICE: ${{ inputs.rollback_service }}
+          DEPLOY_ROLLBACK_IMAGE: ${{ inputs.rollback_image }}

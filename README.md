@@ -161,3 +161,30 @@ SQLX_OFFLINE=true cargo check --workspace
 - 启动与排查清单：`docs/BOOTSTRAP.md`
 - 分层与代码规范：`docs/BASE_CONVENTIONS.md`
 - 开发指南：`DEVELOPMENT_GUIDE.md`
+
+## CI/CD 发布门
+
+当前发布链路是分层门禁：
+
+1. 质量门：`verify` + `sqlx-offline` + `security` + `coverage`
+2. 构建门：`main` 分支 push 后执行 `build-and-push`
+3. 部署门：`deploy-canary`（`production` 环境审批） -> `deploy-stable`
+4. 回滚门：发布失败自动触发 `rollback-on-failure`，也支持 `workflow_dispatch` 手动回滚
+
+覆盖率基线先聚焦关键路径：
+
+- 目标 crate：`axum-application`、`axum-domain`
+- 基线：`lines >= 70`、`functions >= 60`
+- 本地命令：`./scripts/ci/coverage-baseline.sh`
+
+发布相关脚本：
+
+- `scripts/deploy/deploy_canary.sh`
+- `scripts/deploy/promote_stable.sh`
+- `scripts/deploy/rollback.sh`
+
+上线前请在 GitHub 仓库配置：
+
+- `Environment: production`（开启 required reviewers，实现审批）
+- Secrets：`SSH_PRIVATE_KEY`、`SSH_USER`、`SSH_HOST`、`SERVER_APP_PATH`
+- Variables（按需）：`DEPLOY_COMPOSE_FILE`、`DEPLOY_CANARY_SERVICE`、`DEPLOY_STABLE_SERVICE`、`DEPLOY_CANARY_HEALTHCHECK_URL`、`DEPLOY_STABLE_HEALTHCHECK_URL`、`DEPLOY_HEALTHCHECK_RETRIES`、`DEPLOY_HEALTHCHECK_INTERVAL_SECONDS`
