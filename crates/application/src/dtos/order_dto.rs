@@ -1,6 +1,7 @@
 //! Order application DTOs
 
 use axum_domain::order::entity::{DeliveryType, GoodsOrderItem};
+use axum_domain::JsonValue;
 use ulid::Ulid;
 
 /// 应用层输入：创建商品订单
@@ -11,8 +12,8 @@ pub struct CreateGoodsOrderInput {
     pub delivery_type: DeliveryType,
     pub items: Vec<GoodsOrderItem>,
     pub distance_km: Option<f64>,
-    pub address_snapshot: Option<serde_json::Value>,
-    pub store_snapshot: Option<serde_json::Value>,
+    pub address_snapshot: Option<JsonValue>,
+    pub store_snapshot: Option<JsonValue>,
     pub remark: Option<String>,
 }
 

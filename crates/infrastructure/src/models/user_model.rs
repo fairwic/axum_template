@@ -1,6 +1,6 @@
 //! User model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::User;
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

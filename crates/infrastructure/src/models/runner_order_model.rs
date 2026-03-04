@@ -1,6 +1,6 @@
 //! Runner order model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::order::entity::PayStatus;
 use axum_domain::runner_order::entity::{RunnerOrder, RunnerOrderStatus};
 use chrono::{DateTime, Utc};

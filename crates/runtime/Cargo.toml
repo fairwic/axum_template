@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-axum-common.workspace = true
+axum-core-kernel.workspace = true
 axum-domain.workspace = true
 axum-application.workspace = true
 axum-infrastructure.workspace = true

@@ -11,7 +11,7 @@ use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
 };
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::cart::entity::Cart;
@@ -72,7 +72,7 @@ impl UserRepository for InMemoryUserRepo {
         let mut guard = self.inner.lock().await;
         let user = guard
             .get_mut(&user_id)
-            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+            .ok_or_else(|| axum_core_kernel::AppError::NotFound("user not found".into()))?;
         user.phone = Some(phone);
         Ok(user.clone())
     }

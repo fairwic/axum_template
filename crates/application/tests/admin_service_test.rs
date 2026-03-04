@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum_application::AdminService;
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::admin::entity::{Admin, AdminRole};
 use axum_domain::admin::repo::AdminRepository;
 use tokio::sync::Mutex;

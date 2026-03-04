@@ -6,14 +6,16 @@ application：Service/UseCase DTO，负责业务编排与事务边界。
 domain：Entity/Repository Trait/领域规则，不依赖框架。
 infrastructure：Repository 实现/数据库/缓存/外部依赖。
 core-kernel：核心错误模型与基础类型（跨层共享）。
-common：API 侧通用响应结构与兼容导出。
+common-api：API 侧通用响应结构（ApiResponse/PagedResponse）。
+common-infra：基础设施公共适配（如 SQLx/外部依赖错误映射）。
 
 **DTO 分层与目录规范**
 - API 层 DTO：放在 `crates/api/src/dtos/`，按业务单独文件（如 `order_dto.rs`、`runner_order_dto.rs`）。
 - Application 层输入/输出：放在 `crates/application/src/dtos/`，按业务单独文件（如 `order_dto.rs`）。
 - Service 文件只保留业务流程，不内联定义 Input/Output 结构体。
 - Handler 负责映射：`api dto <-> application input/output`。
-- Application 层禁止依赖 API 层 DTO（只依赖 domain/common）。
+- Application 层禁止依赖 API 层 DTO（只依赖 domain/core-kernel）。
+- Application 运行时禁止直接依赖 `utoipa` 与 `serde_json`（如需 JSON 值类型，使用 domain 暴露的类型别名）。
 
 **命名规则**
 Handler：`{resource}_handler` 或 `{resource}_routes`（如 `user_routes`）。
@@ -34,6 +36,7 @@ API Path：`/api/v1/...`。
 
 **错误与响应规范**
 统一使用 `ApiResponse` 与 `AppError`。
+`AppError`/`AppResult`/`DomainError` 来自 `core-kernel`；`ApiResponse` 来自 `common-api`。
 API 层统一使用 REST 风格状态码（如 400/404/409/422），并在 body 返回标准错误码。
 示例响应：
 ```

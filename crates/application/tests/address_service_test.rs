@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum_application::{AddressService, CreateAddressInput, UpdateAddressInput};
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::address::entity::Address;
 use axum_domain::address::repo::AddressRepository;
 use tokio::sync::Mutex;

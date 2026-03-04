@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use crate::dtos::runner_order_dto::CreateRunnerOrderInput;
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::runner_order::entity::RunnerOrder;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
 use axum_domain::store::repo::StoreRepository;

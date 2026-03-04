@@ -1,7 +1,8 @@
 //! Product handlers
 
 use axum::extract::{Path, Query, State};
-use axum_common::{ApiResponse, AppError, PagedResponse};
+use axum_common_api::{ApiResponse, PagedResponse};
+use axum_core_kernel::AppError;
 use ulid::Ulid;
 
 use axum_domain::product::entity::{Product, ProductStatus};
@@ -57,12 +58,13 @@ pub async fn list_products(
         .list_by_category(store_id, category_id, query.page, query.page_size)
         .await?;
 
-    let data = PagedResponse::new(
-        page.items.into_iter().map(to_response).collect(),
-        page.total,
-        page.page,
-        page.page_size,
-    );
+    let data = PagedResponse {
+        items: page.items.into_iter().map(to_response).collect(),
+        total: page.total,
+        page: page.page,
+        page_size: page.page_size,
+        total_pages: page.total_pages,
+    };
     Ok(ApiResponse::success(data))
 }
 
@@ -86,12 +88,13 @@ pub async fn search_products(
         .search(store_id, &query.keyword, query.page, query.page_size)
         .await?;
 
-    let data = PagedResponse::new(
-        page.items.into_iter().map(to_response).collect(),
-        page.total,
-        page.page,
-        page.page_size,
-    );
+    let data = PagedResponse {
+        items: page.items.into_iter().map(to_response).collect(),
+        total: page.total,
+        page: page.page,
+        page_size: page.page_size,
+        total_pages: page.total_pages,
+    };
     Ok(ApiResponse::success(data))
 }
 

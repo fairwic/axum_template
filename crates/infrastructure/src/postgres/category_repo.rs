@@ -1,7 +1,8 @@
 //! Postgres implementation for CategoryRepository
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_common_infra::map_sqlx_error;
+use axum_core_kernel::AppResult;
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::Category;
 use sqlx::PgPool;
@@ -34,7 +35,7 @@ impl CategoryRepository for PgCategoryRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut categories = Vec::with_capacity(rows.len());
         for model in rows {
@@ -62,7 +63,7 @@ impl CategoryRepository for PgCategoryRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -79,7 +80,7 @@ impl CategoryRepository for PgCategoryRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.map(CategoryModel::into_entity).transpose()
     }
@@ -105,7 +106,7 @@ impl CategoryRepository for PgCategoryRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }

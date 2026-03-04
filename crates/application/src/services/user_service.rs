@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::auth::{SmsGateway, WechatAuthClient};
 use axum_domain::cache::CacheService;
 use axum_domain::user::repo::UserRepository;

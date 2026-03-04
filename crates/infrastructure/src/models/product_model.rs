@@ -1,6 +1,6 @@
 //! Product model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::product::entity::{Product, ProductStatus};
 use chrono::{DateTime, Utc};
 use serde_json::Value;

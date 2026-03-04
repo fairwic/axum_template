@@ -71,7 +71,8 @@ fred = { version = "9", features = ["enable-rustls", "partial-tracing"] }
 
 # Internal Crates
 axum-core-kernel = { path = "crates/core-kernel" }
-axum-common = { path = "crates/common" }
+axum-common-api = { path = "crates/common-api" }
+axum-common-infra = { path = "crates/common-infra" }
 axum-domain = { path = "crates/domain" }
 axum-application = { path = "crates/application" }
 axum-infrastructure = { path = "crates/infrastructure" }

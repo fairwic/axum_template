@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use crate::dtos::address_dto::{CreateAddressInput, UpdateAddressInput};
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::address::entity::Address;
 use axum_domain::address::repo::AddressRepository;
 use ulid::Ulid;

@@ -2,12 +2,13 @@
 
 use std::sync::Arc;
 
-use axum_common::{AppError, AppResult, PagedResponse};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::product::entity::Product;
 use axum_domain::product::repo::ProductRepository;
 use chrono::Utc;
 use ulid::Ulid;
 
+use crate::dtos::page_dto::PageResult;
 use crate::dtos::product_dto::{CreateProductInput, UpdateProductInput};
 
 #[derive(Clone)]
@@ -26,12 +27,12 @@ impl ProductService {
         category_id: Ulid,
         page: i64,
         page_size: i64,
-    ) -> AppResult<PagedResponse<Product>> {
+    ) -> AppResult<PageResult<Product>> {
         let (items, total) = self
             .repo
             .list_by_category(store_id, category_id, page, page_size)
             .await?;
-        Ok(PagedResponse::new(items, total, page, page_size))
+        Ok(PageResult::new(items, total, page, page_size))
     }
 
     pub async fn search(
@@ -40,9 +41,9 @@ impl ProductService {
         keyword: &str,
         page: i64,
         page_size: i64,
-    ) -> AppResult<PagedResponse<Product>> {
+    ) -> AppResult<PageResult<Product>> {
         let (items, total) = self.repo.search(store_id, keyword, page, page_size).await?;
-        Ok(PagedResponse::new(items, total, page, page_size))
+        Ok(PageResult::new(items, total, page, page_size))
     }
 
     pub async fn get_by_id(&self, store_id: Ulid, product_id: Ulid) -> AppResult<Product> {

@@ -1,7 +1,7 @@
 //! SMS gateway implementation
 
 use async_trait::async_trait;
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::SmsGateway;
 
 #[derive(Clone, Default)]

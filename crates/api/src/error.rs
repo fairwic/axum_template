@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use serde_json::json;
 
 pub struct ApiError(pub AppError);
@@ -18,14 +18,16 @@ fn map_error_status(error: &AppError) -> StatusCode {
         AppError::Unauthorized => StatusCode::UNAUTHORIZED,
         AppError::Forbidden => StatusCode::FORBIDDEN,
         AppError::Domain(domain) => match domain {
-            axum_common::DomainError::Validation(_) => StatusCode::BAD_REQUEST,
-            axum_common::DomainError::BusinessRule(_) => StatusCode::UNPROCESSABLE_ENTITY,
-            axum_common::DomainError::NotFound(_) => StatusCode::NOT_FOUND,
-            axum_common::DomainError::State(_)
-            | axum_common::DomainError::InvalidState(_)
-            | axum_common::DomainError::ConcurrencyConflict => StatusCode::CONFLICT,
-            axum_common::DomainError::PermissionDenied(_) => StatusCode::FORBIDDEN,
-            axum_common::DomainError::InfrastructureError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            axum_core_kernel::DomainError::Validation(_) => StatusCode::BAD_REQUEST,
+            axum_core_kernel::DomainError::BusinessRule(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            axum_core_kernel::DomainError::NotFound(_) => StatusCode::NOT_FOUND,
+            axum_core_kernel::DomainError::State(_)
+            | axum_core_kernel::DomainError::InvalidState(_)
+            | axum_core_kernel::DomainError::ConcurrencyConflict => StatusCode::CONFLICT,
+            axum_core_kernel::DomainError::PermissionDenied(_) => StatusCode::FORBIDDEN,
+            axum_core_kernel::DomainError::InfrastructureError(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         },
         AppError::Database(_) | AppError::Internal(_) | AppError::Serialization(_) => {
             StatusCode::INTERNAL_SERVER_ERROR
@@ -52,18 +54,20 @@ impl IntoResponse for ApiError {
             AppError::Unauthorized => ("UNAUTHORIZED", "未授权访问"),
             AppError::Forbidden => ("FORBIDDEN", "禁止访问"),
             AppError::Domain(e) => match e {
-                axum_common::DomainError::Validation(msg) => ("DOMAIN_VALIDATION", msg.as_str()),
-                axum_common::DomainError::BusinessRule(msg) => ("BUSINESS_RULE", msg.as_str()),
-                axum_common::DomainError::NotFound(msg) => ("NOT_FOUND", msg.as_str()),
-                axum_common::DomainError::State(msg) => ("INVALID_STATE", msg.as_str()),
-                axum_common::DomainError::InvalidState(msg) => ("INVALID_STATE", msg.as_str()),
-                axum_common::DomainError::PermissionDenied(msg) => {
+                axum_core_kernel::DomainError::Validation(msg) => {
+                    ("DOMAIN_VALIDATION", msg.as_str())
+                }
+                axum_core_kernel::DomainError::BusinessRule(msg) => ("BUSINESS_RULE", msg.as_str()),
+                axum_core_kernel::DomainError::NotFound(msg) => ("NOT_FOUND", msg.as_str()),
+                axum_core_kernel::DomainError::State(msg) => ("INVALID_STATE", msg.as_str()),
+                axum_core_kernel::DomainError::InvalidState(msg) => ("INVALID_STATE", msg.as_str()),
+                axum_core_kernel::DomainError::PermissionDenied(msg) => {
                     ("PERMISSION_DENIED", msg.as_str())
                 }
-                axum_common::DomainError::ConcurrencyConflict => {
+                axum_core_kernel::DomainError::ConcurrencyConflict => {
                     ("CONCURRENCY_CONFLICT", "数据已被修改，请刷新后重试")
                 }
-                axum_common::DomainError::InfrastructureError(msg) => {
+                axum_core_kernel::DomainError::InfrastructureError(msg) => {
                     ("INFRASTRUCTURE_ERROR", msg.as_str())
                 }
             },
@@ -102,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_maps_domain_invalid_state_to_conflict() {
-        let error = AppError::Domain(axum_common::DomainError::InvalidState("x".into()));
+        let error = AppError::Domain(axum_core_kernel::DomainError::InvalidState("x".into()));
         assert_eq!(map_error_status(&error), StatusCode::CONFLICT);
     }
 }

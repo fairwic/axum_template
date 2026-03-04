@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-axum-common.workspace = true
+axum-core-kernel.workspace = true
+axum-common-infra.workspace = true
 axum-domain.workspace = true
 sqlx.workspace = true
 tokio.workspace = true

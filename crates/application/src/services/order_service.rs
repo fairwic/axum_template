@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::dtos::order_dto::{CreateGoodsOrderInput, OrderPreview};
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderItem};
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::product::entity::ProductStatus;

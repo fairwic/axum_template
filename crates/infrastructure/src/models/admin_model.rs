@@ -1,6 +1,6 @@
 //! Admin model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::admin::entity::{Admin, AdminRole};
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

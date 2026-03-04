@@ -4,7 +4,8 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use axum_common::{ApiResponse, AppError};
+use axum_common_api::ApiResponse;
+use axum_core_kernel::AppError;
 
 use axum_domain::store::entity::{Store, StoreStatus};
 

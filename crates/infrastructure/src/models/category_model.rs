@@ -1,6 +1,6 @@
 //! Category model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::category::entity::{Category, CategoryStatus};
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

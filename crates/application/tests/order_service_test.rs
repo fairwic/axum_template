@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum_application::{CreateGoodsOrderInput, OrderService};
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::order::entity::{
     DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus,
 };

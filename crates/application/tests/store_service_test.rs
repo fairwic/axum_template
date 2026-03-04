@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use axum_application::services::store_service;
 use axum_application::StoreService;
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::store::entity::{Store, StoreStatus};
 use axum_domain::store::repo::StoreRepository;
 use tokio::sync::Mutex;

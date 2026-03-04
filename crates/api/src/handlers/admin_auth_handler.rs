@@ -1,7 +1,8 @@
 //! Admin auth handlers
 
 use axum::{extract::State, Json};
-use axum_common::{ApiResponse, AppError};
+use axum_common_api::ApiResponse;
+use axum_core_kernel::AppError;
 use chrono::Utc;
 
 use axum_domain::admin::entity::{Admin, AdminRole};

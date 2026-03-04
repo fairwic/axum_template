@@ -1,6 +1,6 @@
 //! Store model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::store::entity::{Store, StoreStatus};
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

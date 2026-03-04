@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::cart::entity::Cart;
 use axum_domain::cart::repo::CartRepository;
 use ulid::Ulid;

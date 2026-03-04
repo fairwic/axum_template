@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use axum_application::{CreateGoodsOrderInput, OrderPreview, OrderService};
-use axum_common::{ApiResponse, AppError, AppResult};
+use axum_common_api::ApiResponse;
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::order::entity::{
     DeliveryType, GoodsOrder, GoodsOrderItem, GoodsOrderStatus, PayStatus,
 };

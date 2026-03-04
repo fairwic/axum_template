@@ -2,7 +2,8 @@
 
 use axum::extract::{Path, Query, State};
 use axum_application::OrderService;
-use axum_common::{ApiResponse, AppResult};
+use axum_common_api::ApiResponse;
+use axum_core_kernel::AppResult;
 
 use crate::dtos::admin_order_dto::AdminListOrdersQuery;
 use crate::dtos::order_dto::{OrderItemResponse, OrderResponse};

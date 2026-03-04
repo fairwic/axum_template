@@ -26,6 +26,9 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Guard removed compatibility crate
+        run: ./scripts/ci/guard-no-axum-common.sh
+
       - name: Format check
         run: cargo fmt --all -- --check
 

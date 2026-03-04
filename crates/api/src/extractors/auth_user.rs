@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use ulid::Ulid;
 
 use crate::auth::jwt::Claims;

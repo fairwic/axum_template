@@ -1,6 +1,6 @@
 //! Goods order model for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::order::entity::{DeliveryType, GoodsOrder, GoodsOrderStatus, PayStatus};
 use chrono::{DateTime, Utc};
 use serde_json::Value;

@@ -85,7 +85,11 @@ struct NoopLbs;
 
 #[async_trait]
 impl LbsService for NoopLbs {
-    async fn distance_km(&self, _from: (f64, f64), _to: (f64, f64)) -> axum_common::AppResult<f64> {
+    async fn distance_km(
+        &self,
+        _from: (f64, f64),
+        _to: (f64, f64),
+    ) -> axum_core_kernel::AppResult<f64> {
         Ok(0.0)
     }
 }

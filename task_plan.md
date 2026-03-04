@@ -32,4 +32,5 @@
 
 ## Status
 
-**Phase 1 已收敛完成** - `事务边界(UoW)` 已覆盖订单关键路径；`crate 边界重构` 已完成 `core-kernel` 落地，下一步进入 axum/sqlx 进一步外移阶段。
+**Phase 1 已收敛完成** - `事务边界(UoW)` 已覆盖订单关键路径；`crate 边界重构` 已完成 `core-kernel` 落地。  
+**Phase 2（进行中）** - 已完成 `common-api` 拆分并迁移 API 响应模型；业务层错误类型已直接依赖 `core-kernel`；新增 `common-infra` 作为基础设施公共适配层并完成 SQLx 映射落地；`common` 兼容层已移除并由 CI 防回流守门；`application` 已移除对 `common-api`/`utoipa` 运行时依赖，并通过 domain 类型别名消除 `serde_json` 运行时依赖。

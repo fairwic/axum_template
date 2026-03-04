@@ -12,7 +12,7 @@ use axum_application::{
     AddressService, AdminService, CartService, CategoryService, OrderService, ProductService,
     RunnerOrderService, StoreService, UserService,
 };
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::address::entity::Address;
 use axum_domain::address::repo::AddressRepository;
 use axum_domain::admin::entity::Admin;
@@ -72,11 +72,13 @@ impl UserRepository for InMemoryUserRepo {
             .iter()
             .find_map(|(openid, user)| (user.id == user_id).then(|| openid.clone()));
         let Some(key) = key else {
-            return Err(axum_common::AppError::NotFound("user not found".into()));
+            return Err(axum_core_kernel::AppError::NotFound(
+                "user not found".into(),
+            ));
         };
         let user = guard
             .get_mut(&key)
-            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+            .ok_or_else(|| axum_core_kernel::AppError::NotFound("user not found".into()))?;
         user.current_store_id = Some(store_id);
         Ok(user.clone())
     }
@@ -87,11 +89,13 @@ impl UserRepository for InMemoryUserRepo {
             .iter()
             .find_map(|(openid, user)| (user.id == user_id).then(|| openid.clone()));
         let Some(key) = key else {
-            return Err(axum_common::AppError::NotFound("user not found".into()));
+            return Err(axum_core_kernel::AppError::NotFound(
+                "user not found".into(),
+            ));
         };
         let user = guard
             .get_mut(&key)
-            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+            .ok_or_else(|| axum_core_kernel::AppError::NotFound("user not found".into()))?;
         user.phone = Some(phone);
         Ok(user.clone())
     }

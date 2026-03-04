@@ -1,7 +1,7 @@
 //! Redis cache service
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::CacheService;
 use fred::{prelude::*, types::ConnectHandle};
 

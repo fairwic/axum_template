@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::category::entity::Category;
 use axum_domain::category::repo::CategoryRepository;
 use chrono::Utc;

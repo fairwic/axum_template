@@ -1,7 +1,8 @@
 //! Postgres implementation for RunnerOrderRepository
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_common_infra::map_sqlx_error;
+use axum_core_kernel::AppResult;
 use axum_domain::runner_order::repo::RunnerOrderRepository;
 use axum_domain::RunnerOrder;
 use sqlx::PgPool;
@@ -71,7 +72,7 @@ impl RunnerOrderRepository for PgRunnerOrderRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -121,7 +122,7 @@ impl RunnerOrderRepository for PgRunnerOrderRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -143,7 +144,7 @@ impl RunnerOrderRepository for PgRunnerOrderRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         match row {
             Some(value) => Ok(Some(value.into_entity()?)),
@@ -169,7 +170,7 @@ impl RunnerOrderRepository for PgRunnerOrderRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {
@@ -196,7 +197,7 @@ impl RunnerOrderRepository for PgRunnerOrderRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {

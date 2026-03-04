@@ -1,4 +1,4 @@
-//! 统一响应格式模块
+//! Unified API response types.
 
 use axum::{
     response::{IntoResponse, Response},
@@ -7,7 +7,7 @@ use axum::{
 use serde::Serialize;
 use utoipa::ToSchema;
 
-/// 统一 API 响应格式
+/// Unified API response envelope.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ApiResponse<T: Serialize> {
     pub success: bool,
@@ -17,7 +17,7 @@ pub struct ApiResponse<T: Serialize> {
     pub error: Option<ErrorDetail>,
 }
 
-/// 错误详情
+/// Error detail envelope.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorDetail {
     pub code: String,
@@ -26,7 +26,7 @@ pub struct ErrorDetail {
     pub details: Option<Vec<FieldError>>,
 }
 
-/// 字段错误详情
+/// Field-level validation error.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FieldError {
     pub field: String,
@@ -34,7 +34,6 @@ pub struct FieldError {
 }
 
 impl<T: Serialize> ApiResponse<T> {
-    /// 创建成功响应
     pub fn success(data: T) -> Self {
         Self {
             success: true,
@@ -43,7 +42,6 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 
-    /// 创建错误响应
     pub fn error(code: impl Into<String>, message: impl Into<String>) -> Self {
         Self {
             success: false,
@@ -56,7 +54,6 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 
-    /// 创建带详情的错误响应
     pub fn error_with_details(
         code: impl Into<String>,
         message: impl Into<String>,
@@ -80,7 +77,7 @@ impl<T: Serialize> IntoResponse for ApiResponse<T> {
     }
 }
 
-/// 分页响应
+/// Generic pagination response.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PagedResponse<T: Serialize> {
     pub items: Vec<T>,

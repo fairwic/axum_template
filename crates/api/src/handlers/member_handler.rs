@@ -1,6 +1,6 @@
 //! Member handlers
 
-use axum_common::ApiResponse;
+use axum_common_api::ApiResponse;
 
 use crate::dtos::member_dto::{MemberBenefitsResponse, MemberStatusResponse};
 

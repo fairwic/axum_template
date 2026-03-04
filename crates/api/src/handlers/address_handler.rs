@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use axum_application::{AddressService, CreateAddressInput, UpdateAddressInput};
-use axum_common::{ApiResponse, AppResult};
+use axum_common_api::ApiResponse;
+use axum_core_kernel::AppResult;
 
 use crate::dtos::address_dto::{AddressResponse, CreateAddressRequest, UpdateAddressRequest};
 use crate::extractors::{parse_ulid, AuthUser};

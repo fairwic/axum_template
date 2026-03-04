@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum_application::UserService;
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::auth::{SmsGateway, WechatAuthClient, WechatSession};
 use axum_domain::cache::CacheService;
 use axum_domain::user::repo::UserRepository;
@@ -66,7 +66,7 @@ impl UserRepository for InMemoryUserRepo {
         let entry = openid_guard
             .values_mut()
             .find(|item| item.id == user_id)
-            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+            .ok_or_else(|| axum_core_kernel::AppError::NotFound("user not found".into()))?;
         entry.current_store_id = Some(store_id);
         let updated = entry.clone();
         drop(openid_guard);

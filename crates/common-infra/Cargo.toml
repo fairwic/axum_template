@@ -1,0 +1,8 @@
+[package]
+name = "axum-common-infra"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum-core-kernel.workspace = true
+sqlx.workspace = true

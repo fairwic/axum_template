@@ -4,7 +4,7 @@ use crate::dtos::{
     address_dto, admin_auth_dto, admin_order_dto, admin_runner_order_dto, auth_dto, cart_dto,
     category_dto, config_dto, member_dto, order_dto, product_dto, runner_order_dto, store_dto,
 };
-use axum_common::response::{self, PagedResponse};
+use axum_common_api::response::{self, PagedResponse};
 
 #[derive(OpenApi)]
 #[openapi(

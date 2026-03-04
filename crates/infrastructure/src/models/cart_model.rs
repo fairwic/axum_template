@@ -1,6 +1,6 @@
 //! Cart models for persistence
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::cart::entity::{Cart, CartItem};
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

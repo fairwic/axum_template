@@ -1,7 +1,8 @@
 //! Postgres transaction manager for order write consistency.
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_common_infra::map_sqlx_error;
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::{GoodsOrder, OrderUnitOfWork, RunnerOrder, TransactionManager};
 use sqlx::{PgPool, Postgres, Transaction};
 use ulid::Ulid;
@@ -35,7 +36,7 @@ impl PgOrderUnitOfWork {
 #[async_trait]
 impl TransactionManager for PgTransactionManager {
     async fn begin_order_uow(&self) -> AppResult<Box<dyn OrderUnitOfWork>> {
-        let tx = self.pool.begin().await.map_err(AppError::database)?;
+        let tx = self.pool.begin().await.map_err(map_sqlx_error)?;
         Ok(Box::new(PgOrderUnitOfWork { tx: Some(tx) }))
     }
 }
@@ -56,7 +57,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .fetch_optional(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         Ok(row.is_some())
     }
@@ -74,7 +75,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .execute(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         Ok(())
     }
@@ -130,7 +131,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .fetch_one(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -189,7 +190,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .fetch_one(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -245,7 +246,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .fetch_one(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -296,7 +297,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
         )
         .fetch_one(tx.as_mut())
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -306,7 +307,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             .tx
             .take()
             .ok_or_else(|| AppError::Internal("transaction already closed".into()))?;
-        tx.commit().await.map_err(AppError::database)?;
+        tx.commit().await.map_err(map_sqlx_error)?;
         Ok(())
     }
 
@@ -315,7 +316,7 @@ impl OrderUnitOfWork for PgOrderUnitOfWork {
             .tx
             .take()
             .ok_or_else(|| AppError::Internal("transaction already closed".into()))?;
-        tx.rollback().await.map_err(AppError::database)?;
+        tx.rollback().await.map_err(map_sqlx_error)?;
         Ok(())
     }
 }

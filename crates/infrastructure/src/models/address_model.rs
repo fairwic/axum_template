@@ -1,6 +1,6 @@
 //! Address model
 
-use axum_common::AppError;
+use axum_core_kernel::AppError;
 use axum_domain::Address;
 use chrono::{DateTime, Utc};
 use ulid::Ulid;

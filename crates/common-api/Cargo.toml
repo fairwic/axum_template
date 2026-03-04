@@ -1,5 +1,5 @@
 [package]
-name = "axum-common"
+name = "axum-common-api"
 version.workspace = true
 edition.workspace = true
 
@@ -7,4 +7,3 @@ edition.workspace = true
 serde.workspace = true
 axum.workspace = true
 utoipa.workspace = true
-axum-core-kernel.workspace = true

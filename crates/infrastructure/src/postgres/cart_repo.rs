@@ -1,7 +1,8 @@
 //! Postgres implementation for CartRepository
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_common_infra::map_sqlx_error;
+use axum_core_kernel::AppResult;
 use axum_domain::cart::repo::CartRepository;
 use axum_domain::Cart;
 use chrono::Utc;
@@ -27,7 +28,7 @@ impl PgCartRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
         Ok(row.map(|r| r.id))
     }
 }
@@ -42,7 +43,7 @@ impl CartRepository for PgCartRepository {
             store_id.to_string()
         )
         .fetch_optional(&self.pool)
-        .await.map_err(AppError::database)?;
+        .await.map_err(map_sqlx_error)?;
 
         let Some(cart) = cart_row else {
             return Ok(None);
@@ -55,7 +56,7 @@ impl CartRepository for PgCartRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut cart_items = Vec::with_capacity(items.len());
         for item in items {
@@ -83,7 +84,7 @@ impl CartRepository for PgCartRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         Ok(row.into_entity(vec![])?)
     }
@@ -96,11 +97,7 @@ impl CartRepository for PgCartRepository {
         qty: i32,
         price_snapshot: i32,
     ) -> AppResult<()> {
-        let Some(cart_id) = self
-            .find_cart_id(user_id, store_id)
-            .await
-            .map_err(AppError::database)?
-        else {
+        let Some(cart_id) = self.find_cart_id(user_id, store_id).await? else {
             return Ok(());
         };
 
@@ -118,16 +115,12 @@ impl CartRepository for PgCartRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
         Ok(())
     }
 
     async fn remove_item(&self, user_id: Ulid, store_id: Ulid, product_id: Ulid) -> AppResult<()> {
-        let Some(cart_id) = self
-            .find_cart_id(user_id, store_id)
-            .await
-            .map_err(AppError::database)?
-        else {
+        let Some(cart_id) = self.find_cart_id(user_id, store_id).await? else {
             return Ok(());
         };
         sqlx::query!(
@@ -137,22 +130,18 @@ impl CartRepository for PgCartRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
         Ok(())
     }
 
     async fn clear(&self, user_id: Ulid, store_id: Ulid) -> AppResult<()> {
-        let Some(cart_id) = self
-            .find_cart_id(user_id, store_id)
-            .await
-            .map_err(AppError::database)?
-        else {
+        let Some(cart_id) = self.find_cart_id(user_id, store_id).await? else {
             return Ok(());
         };
         sqlx::query!(r#"DELETE FROM cart_items WHERE cart_id = $1"#, cart_id)
             .execute(&self.pool)
             .await
-            .map_err(AppError::database)?;
+            .map_err(map_sqlx_error)?;
         Ok(())
     }
 }

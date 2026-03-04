@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use axum_domain::admin::entity::{Admin, AdminRole};
 use axum_domain::admin::repo::AdminRepository;
 use bcrypt::{hash, verify, DEFAULT_COST};

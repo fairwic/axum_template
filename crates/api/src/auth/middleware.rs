@@ -5,7 +5,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 
 use crate::auth::jwt::{decode_token, Claims};
 use crate::state::AppState;

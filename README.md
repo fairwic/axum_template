@@ -48,7 +48,8 @@
 │   ├── infrastructure/ # Postgres / Redis / 外部服务实现
 │   ├── runtime/        # AppState 装配与 worker 调度
 │   ├── core-kernel/    # 核心错误与基础类型
-│   └── common/         # 统一响应与公共导出
+│   ├── common-api/     # API 响应模型（ApiResponse/PagedResponse）
+│   ├── common-infra/   # 基础设施公共适配（如 SQLx 错误映射）
 ├── bins/
 │   ├── server/         # axum-server 入口
 │   └── worker/         # axum-worker 入口
@@ -65,6 +66,7 @@ docker compose up -d
 ```
 
 错误响应采用统一 REST 风格状态码（如 400/404/409/422）。
+错误模型来自 `core-kernel`，响应封套来自 `common-api`。
 
 2. 准备环境变量（可选）
 

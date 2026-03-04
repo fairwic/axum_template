@@ -10,7 +10,7 @@ use axum_api::{create_router, AppState};
 use axum_application::{
     AdminService, CartService, CategoryService, ProductService, StoreService, UserService,
 };
-use axum_common::AppResult;
+use axum_core_kernel::AppResult;
 use axum_domain::admin::entity::Admin;
 use axum_domain::admin::repo::AdminRepository;
 use axum_domain::auth::{SmsGateway, WechatAuthClient, WechatSession};
@@ -86,7 +86,7 @@ impl UserRepository for InMemoryUserRepo {
         let entry = openid_guard
             .values_mut()
             .find(|item| item.id == user_id)
-            .ok_or_else(|| axum_common::AppError::NotFound("user not found".into()))?;
+            .ok_or_else(|| axum_core_kernel::AppError::NotFound("user not found".into()))?;
         entry.current_store_id = Some(store_id);
         let updated = entry.clone();
         drop(openid_guard);

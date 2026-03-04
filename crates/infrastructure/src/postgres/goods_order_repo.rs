@@ -1,7 +1,8 @@
 //! Postgres implementation for GoodsOrderRepository
 
 use async_trait::async_trait;
-use axum_common::{AppError, AppResult};
+use axum_common_infra::map_sqlx_error;
+use axum_core_kernel::AppResult;
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::GoodsOrder;
 use sqlx::PgPool;
@@ -71,7 +72,7 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -129,7 +130,7 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         row.into_entity()
     }
@@ -151,7 +152,7 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         match row {
             Some(value) => Ok(Some(value.into_entity()?)),
@@ -177,7 +178,7 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {
@@ -204,7 +205,7 @@ impl GoodsOrderRepository for PgGoodsOrderRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(AppError::database)?;
+        .map_err(map_sqlx_error)?;
 
         let mut orders = Vec::with_capacity(rows.len());
         for row in rows {

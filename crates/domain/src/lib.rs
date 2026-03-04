@@ -16,6 +16,8 @@ pub mod store;
 pub mod transaction;
 pub mod user;
 
+pub type JsonValue = serde_json::Value;
+
 pub use address::entity::Address;
 pub use address::repo::AddressRepository;
 pub use admin::entity::{Admin, AdminRole};

@@ -1,4 +1,4 @@
-use axum_common::{AppError, AppResult};
+use axum_core_kernel::{AppError, AppResult};
 use ulid::Ulid;
 
 pub fn parse_ulid(value: &str, field: &str) -> AppResult<Ulid> {
