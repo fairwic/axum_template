@@ -1,7 +1,7 @@
 //! Postgres implementation for UserRepository
 
 use async_trait::async_trait;
-use axum_common_infra::{map_sqlx_error, map_unique_violation};
+use axum_infra_common::{map_sqlx_error, map_unique_violation};
 use axum_core_kernel::AppResult;
 use axum_domain::user::repo::UserRepository;
 use axum_domain::User;

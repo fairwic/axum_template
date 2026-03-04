@@ -1,5 +1,5 @@
 [package]
-name = "axum-common-infra"
+name = "axum-infra-common"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

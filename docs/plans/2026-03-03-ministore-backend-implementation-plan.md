@@ -4,7 +4,7 @@
 
 **Goal:** Build Sprint 1 backend for 门店/类目/商品/搜索/购物车 + 管理后台最小 API，含微信登录、管理员登录与腾讯位置服务距离计算。
 
-**Architecture:** Keep DDD layering (`domain`/`application`/`infrastructure`/`api`). Add new modules for user(admin/wechcat), store, category, product, cart. API split between `/api/v1` (C端) and `/api/admin/v1` (管理端).
+**Architecture:** Keep DDD layering (`domain`/`application`/`infrastructure`/`api`). Add new modules for user(admin/wechcat), store, category, product, cart. API split between `/api/v1` (C 端) and `/api/admin/v1` (管理端).
 
 **Tech Stack:** Rust, Axum, SQLx(Postgres), Redis(缓存占位), JWT, bcrypt, reqwest.
 
@@ -15,6 +15,7 @@
 ### Task 1: Add Auth Config + JWT Utilities
 
 **Files:**
+
 - Modify: `crates/infrastructure/src/config.rs`
 - Modify: `config/default.toml`
 - Modify: `crates/api/src/lib.rs`
@@ -23,6 +24,7 @@
 - Test: `crates/api/tests/auth_jwt_test.rs`
 
 **Step 1: Write the failing test**
+
 ```rust
 use axum_api::auth::jwt::{encode_token, decode_token, Claims};
 
@@ -41,6 +43,7 @@ Run: `cargo test -p axum-api -- tests/auth_jwt_test.rs -v`
 Expected: FAIL (module not found)
 
 **Step 3: Write minimal implementation**
+
 ```rust
 // crates/api/src/auth/jwt.rs
 use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
@@ -87,6 +90,7 @@ Run: `cargo test -p axum-api -- tests/auth_jwt_test.rs -v`
 Expected: PASS
 
 **Step 5: Commit**
+
 ```bash
 git add crates/api/src/auth crates/api/tests/auth_jwt_test.rs crates/infrastructure/src/config.rs config/default.toml
 git commit -m "feat(认证): 添加JWT基础配置与工具"
@@ -97,6 +101,7 @@ git commit -m "feat(认证): 添加JWT基础配置与工具"
 ### Task 2: WeChat User Domain + Repo + Service + API
 
 **Files:**
+
 - Modify: `crates/domain/src/user/entity.rs`
 - Modify: `crates/domain/src/user/repo.rs`
 - Modify: `crates/domain/src/user/mod.rs`
@@ -112,6 +117,7 @@ git commit -m "feat(认证): 添加JWT基础配置与工具"
 - Test: `crates/api/tests/auth_routes_test.rs`
 
 **Step 1: Write failing test (service)**
+
 ```rust
 #[tokio::test]
 async fn test_login_creates_user() {
@@ -128,6 +134,7 @@ Run: `cargo test -p axum-application -- tests/user_service_test.rs -v`
 Expected: FAIL (method not found)
 
 **Step 3: Implement minimal code**
+
 ```rust
 // domain user entity
 pub struct User {
@@ -177,6 +184,7 @@ Run: `cargo test -p axum-application -- tests/user_service_test.rs -v`
 Expected: PASS
 
 **Step 5: Commit**
+
 ```bash
 git add crates/domain/src/user crates/application/src/services/user_service.rs crates/application/src/dtos/user_dto.rs
 git commit -m "refactor(用户): 实现微信用户登录服务"
@@ -187,6 +195,7 @@ git commit -m "refactor(用户): 实现微信用户登录服务"
 ### Task 3: Admin Domain + Auth Service + API
 
 **Files:**
+
 - Create: `crates/domain/src/admin/*`
 - Create: `crates/infrastructure/src/models/admin_model.rs`
 - Create: `crates/infrastructure/src/postgres/admin_repo.rs`
@@ -196,6 +205,7 @@ git commit -m "refactor(用户): 实现微信用户登录服务"
 - Test: `crates/application/tests/admin_service_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_admin_login_success() {
@@ -208,6 +218,7 @@ async fn test_admin_login_success() {
 ```
 
 **Step 2: Implement minimal code**
+
 ```rust
 // admin service
 pub async fn login(&self, phone: &str, password: &str) -> AppResult<Admin> {
@@ -225,6 +236,7 @@ Run: `cargo test -p axum-application -- tests/admin_service_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
 git add crates/domain/src/admin crates/application/src/services/admin_service.rs crates/api/src/handlers/admin_auth_handler.rs
 git commit -m "feat(管理员): 添加登录与服务"
@@ -235,6 +247,7 @@ git commit -m "feat(管理员): 添加登录与服务"
 ### Task 4: Store Module (Domain + Repo + Service + API)
 
 **Files:**
+
 - Create: `crates/domain/src/store/*`
 - Create: `crates/infrastructure/src/models/store_model.rs`
 - Create: `crates/infrastructure/src/postgres/store_repo.rs`
@@ -244,6 +257,7 @@ git commit -m "feat(管理员): 添加登录与服务"
 - Test: `crates/application/tests/store_service_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_list_stores_sorted_by_distance() {
@@ -256,6 +270,7 @@ async fn test_list_stores_sorted_by_distance() {
 ```
 
 **Step 2: Implement minimal entity + service**
+
 ```rust
 pub struct Store {
     pub id: Ulid,
@@ -278,6 +293,7 @@ Run: `cargo test -p axum-application -- tests/store_service_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
 git add crates/domain/src/store crates/application/src/services/store_service.rs crates/api/src/handlers/store_handler.rs
 git commit -m "feat(门店): 添加门店模块与附近门店接口"
@@ -288,6 +304,7 @@ git commit -m "feat(门店): 添加门店模块与附近门店接口"
 ### Task 5: Category Module (Domain + Repo + Service + API)
 
 **Files:**
+
 - Create: `crates/domain/src/category/*`
 - Create: `crates/infrastructure/src/models/category_model.rs`
 - Create: `crates/infrastructure/src/postgres/category_repo.rs`
@@ -297,6 +314,7 @@ git commit -m "feat(门店): 添加门店模块与附近门店接口"
 - Test: `crates/application/tests/category_service_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_list_categories_by_store() {
@@ -308,6 +326,7 @@ async fn test_list_categories_by_store() {
 ```
 
 **Step 2: Implement minimal code**
+
 ```rust
 // domain/category/entity.rs
 pub struct Category {
@@ -349,6 +368,7 @@ Run: `cargo test -p axum-application -- tests/category_service_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
 git add crates/domain/src/category crates/application/src/services/category_service.rs crates/api/src/handlers/category_handler.rs
 git commit -m "feat(类目): 添加类目模块"
@@ -359,6 +379,7 @@ git commit -m "feat(类目): 添加类目模块"
 ### Task 6: Product Module + Search
 
 **Files:**
+
 - Create: `crates/domain/src/product/*`
 - Create: `crates/infrastructure/src/models/product_model.rs`
 - Create: `crates/infrastructure/src/postgres/product_repo.rs`
@@ -368,6 +389,7 @@ git commit -m "feat(类目): 添加类目模块"
 - Test: `crates/application/tests/product_service_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_search_products_by_keyword() {
@@ -379,6 +401,7 @@ async fn test_search_products_by_keyword() {
 ```
 
 **Step 2: Implement minimal code**
+
 ```rust
 // domain/product/entity.rs
 pub struct Product {
@@ -410,6 +433,7 @@ Run: `cargo test -p axum-application -- tests/product_service_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
 git add crates/domain/src/product crates/application/src/services/product_service.rs crates/api/src/handlers/product_handler.rs
 git commit -m "feat(商品): 添加商品模块与搜索"
@@ -420,6 +444,7 @@ git commit -m "feat(商品): 添加商品模块与搜索"
 ### Task 7: Cart Module
 
 **Files:**
+
 - Create: `crates/domain/src/cart/*`
 - Create: `crates/infrastructure/src/models/cart_model.rs`
 - Create: `crates/infrastructure/src/postgres/cart_repo.rs`
@@ -429,6 +454,7 @@ git commit -m "feat(商品): 添加商品模块与搜索"
 - Test: `crates/application/tests/cart_service_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_cart_add_item() {
@@ -441,6 +467,7 @@ async fn test_cart_add_item() {
 ```
 
 **Step 2: Implement minimal code**
+
 ```rust
 // domain/cart/entity.rs
 pub struct CartItem {
@@ -471,6 +498,7 @@ Run: `cargo test -p axum-application -- tests/cart_service_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
 git add crates/domain/src/cart crates/application/src/services/cart_service.rs crates/api/src/handlers/cart_handler.rs
 git commit -m "feat(购物车): 添加购物车模块"
@@ -481,12 +509,14 @@ git commit -m "feat(购物车): 添加购物车模块"
 ### Task 8: Tencent LBS Client
 
 **Files:**
+
 - Create: `crates/infrastructure/src/lbs/tencent.rs`
 - Modify: `crates/infrastructure/src/lib.rs`
 - Modify: `crates/infrastructure/src/config.rs`
 - Test: `crates/infrastructure/tests/tencent_lbs_test.rs`
 
 **Step 1: Write failing test**
+
 ```rust
 #[tokio::test]
 async fn test_distance_km() {
@@ -497,6 +527,7 @@ async fn test_distance_km() {
 ```
 
 **Step 2: Implement minimal code**
+
 ```rust
 pub struct TencentLbs { key: String }
 impl TencentLbs {
@@ -509,12 +540,13 @@ impl TencentLbs {
 ```
 
 **Step 3: Run test**
-Run: `cargo test -p axum-infrastructure -- tests/tencent_lbs_test.rs -v`
+Run: `cargo test -p axum-infra -- tests/tencent_lbs_test.rs -v`
 Expected: PASS
 
 **Step 4: Commit**
+
 ```bash
-git add crates/infrastructure/src/lbs crates/infrastructure/tests/tencent_lbs_test.rs
+git add crates/infra/src/lbs crates/infra/tests/tencent_lbs_test.rs
 git commit -m "feat(LBS): 添加腾讯位置服务客户端"
 ```
 
@@ -523,6 +555,7 @@ git commit -m "feat(LBS): 添加腾讯位置服务客户端"
 ### Task 9: Wiring + OpenAPI + Remove Sample User Routes
 
 **Files:**
+
 - Modify: `crates/api/src/router.rs`
 - Modify: `crates/api/src/state.rs`
 - Modify: `bins/server/src/bootstrap.rs`
@@ -532,8 +565,9 @@ git commit -m "feat(LBS): 添加腾讯位置服务客户端"
 - Update tests accordingly
 
 **Steps**
+
 1. Wire AppState with new services.
-2. Ensure routes include C端与管理端。
+2. Ensure routes include C 端与管理端。
 3. Update OpenAPI tags.
 4. Run `cargo test`.
 5. Commit.
@@ -543,11 +577,13 @@ git commit -m "feat(LBS): 添加腾讯位置服务客户端"
 ### Task 10: Migrations + SQLx Prepare
 
 **Files:**
+
 - Create: `migrations/20260303000100_create_core_tables.up.sql`
 - Create: `migrations/20260303000100_create_core_tables.down.sql`
 - Update: `.sqlx/`
 
 **Steps**
+
 1. Write migration SQL (tables + indexes).
 2. Run `cargo sqlx prepare --workspace`.
 3. Commit migrations + `.sqlx/`.
@@ -557,7 +593,7 @@ git commit -m "feat(LBS): 添加腾讯位置服务客户端"
 ### Task 11: Final Verification
 
 **Steps**
+
 1. Run `cargo test`.
 2. Run `cargo fmt --check`.
 3. Summarize results.
-

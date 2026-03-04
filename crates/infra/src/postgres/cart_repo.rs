@@ -1,7 +1,7 @@
 //! Postgres implementation for CartRepository
 
 use async_trait::async_trait;
-use axum_common_infra::map_sqlx_error;
+use axum_infra_common::map_sqlx_error;
 use axum_core_kernel::AppResult;
 use axum_domain::cart::repo::CartRepository;
 use axum_domain::Cart;

@@ -1,7 +1,7 @@
 //! Category handlers
 
 use axum::extract::{Query, State};
-use axum_common_api::ApiResponse;
+use axum_api_common::ApiResponse;
 use axum_core_kernel::AppError;
 use ulid::Ulid;
 

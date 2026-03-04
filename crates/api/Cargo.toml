@@ -6,7 +6,7 @@ license.workspace = true
 
 [dependencies]
 axum-core-kernel.workspace = true
-axum-common-api.workspace = true
+axum-api-common.workspace = true
 axum-domain.workspace = true
 axum-application.workspace = true
 axum.workspace = true

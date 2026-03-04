@@ -1,7 +1,7 @@
 //! Product handlers
 
 use axum::extract::{Path, Query, State};
-use axum_common_api::{ApiResponse, PagedResponse};
+use axum_api_common::{ApiResponse, PagedResponse};
 use axum_core_kernel::AppError;
 use ulid::Ulid;
 

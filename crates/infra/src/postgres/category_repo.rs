@@ -1,7 +1,7 @@
 //! Postgres implementation for CategoryRepository
 
 use async_trait::async_trait;
-use axum_common_infra::map_sqlx_error;
+use axum_infra_common::map_sqlx_error;
 use axum_core_kernel::AppResult;
 use axum_domain::category::repo::CategoryRepository;
 use axum_domain::Category;

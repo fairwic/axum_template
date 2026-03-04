@@ -10,7 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 axum-application.workspace = true
-axum-infrastructure.workspace = true
+axum-infra.workspace = true
 axum-api.workspace = true
 axum-runtime.workspace = true
 axum-core-kernel.workspace = true

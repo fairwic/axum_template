@@ -9,7 +9,7 @@ name = "axum-worker"
 path = "src/main.rs"
 
 [dependencies]
-axum-infrastructure.workspace = true
+axum-infra.workspace = true
 axum-runtime.workspace = true
 tokio.workspace = true
 tracing.workspace = true

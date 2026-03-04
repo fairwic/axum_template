@@ -5,7 +5,7 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-use axum_infrastructure::AppConfig;
+use axum_infra::AppConfig;
 use axum_runtime::{build_app_state, spawn_order_jobs};
 
 #[tokio::main]

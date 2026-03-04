@@ -1,7 +1,7 @@
 //! Postgres transaction manager for order write consistency.
 
 use async_trait::async_trait;
-use axum_common_infra::map_sqlx_error;
+use axum_infra_common::map_sqlx_error;
 use axum_core_kernel::{AppError, AppResult};
 use axum_domain::{GoodsOrder, OrderUnitOfWork, RunnerOrder, TransactionManager};
 use sqlx::{PgPool, Postgres, Transaction};

@@ -8,7 +8,7 @@ use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use axum_api::create_router;
-use axum_infrastructure::AppConfig;
+use axum_infra::AppConfig;
 use axum_runtime::build_app_state;
 
 #[tokio::main]

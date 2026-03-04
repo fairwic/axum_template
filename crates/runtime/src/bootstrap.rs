@@ -10,7 +10,7 @@ use axum_application::{
     RunnerOrderService, StoreService, UserService,
 };
 use axum_domain::{CacheService, SmsGateway, TransactionManager, WechatAuthClient};
-use axum_infrastructure::{
+use axum_infra::{
     AppConfig, CacheProvider, LbsProvider, LogSmsGateway, MemoryCacheService, PgAddressRepository,
     PgAdminRepository, PgCartRepository, PgCategoryRepository, PgGoodsOrderRepository,
     PgProductRepository, PgRunnerOrderRepository, PgStoreRepository, PgTransactionManager,

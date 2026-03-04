@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use axum_application::{CategoryService, CreateCategoryInput, UpdateCategoryInput};
-use axum_common_api::ApiResponse;
+use axum_api_common::ApiResponse;
 use axum_core_kernel::{AppError, AppResult};
 use axum_domain::category::entity::{Category, CategoryStatus};
 

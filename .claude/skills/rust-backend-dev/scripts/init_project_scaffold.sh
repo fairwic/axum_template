@@ -139,9 +139,9 @@ edition.workspace = true
 license.workspace = true
 EOF
 
-cat > crates/infrastructure/Cargo.toml <<'EOF'
+cat > crates/infra/Cargo.toml <<'EOF'
 [package]
-name = "axum-infrastructure"
+name = "axum-infra"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

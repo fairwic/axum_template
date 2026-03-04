@@ -1,7 +1,7 @@
 //! Postgres implementation for GoodsOrderRepository
 
 use async_trait::async_trait;
-use axum_common_infra::map_sqlx_error;
+use axum_infra_common::map_sqlx_error;
 use axum_core_kernel::AppResult;
 use axum_domain::order::repo::GoodsOrderRepository;
 use axum_domain::GoodsOrder;

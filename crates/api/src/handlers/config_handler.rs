@@ -1,7 +1,7 @@
 //! Config handlers
 
 use axum::{extract::State, Json};
-use axum_common_api::ApiResponse;
+use axum_api_common::ApiResponse;
 use axum_core_kernel::{AppError, AppResult};
 
 use crate::dtos::config_dto::{ConfigResponse, UpdateConfigRequest};
