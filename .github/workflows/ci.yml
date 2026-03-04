@@ -22,6 +22,9 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+          components: rustfmt, clippy
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -33,7 +36,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Unit tests
         run: cargo test --workspace --quiet
@@ -66,6 +69,8 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -82,10 +87,71 @@ jobs:
       - name: Offline compile check
         run: SQLX_OFFLINE=true cargo check --workspace --quiet
 
+  security:
+    name: Security (audit/deny)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.88.0
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Cargo audit (retry)
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if cargo audit; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep_seconds=$((attempt * 10))
+              echo "cargo audit failed (attempt ${attempt}/3), retrying in ${sleep_seconds}s..."
+              sleep "${sleep_seconds}"
+            fi
+          done
+          echo "cargo audit failed after 3 attempts"
+          exit 1
+
+      - name: Cargo deny advisories (retry)
+        env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if cargo deny check advisories; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep_seconds=$((attempt * 10))
+              echo "cargo deny advisories failed (attempt ${attempt}/3), retrying in ${sleep_seconds}s..."
+              sleep "${sleep_seconds}"
+            fi
+          done
+          echo "cargo deny advisories failed after 3 attempts"
+          exit 1
+
+      - name: Cargo deny policy
+        run: cargo deny check bans licenses sources
+
   build-and-push:
     name: Build & Push Image (GHCR)
     runs-on: ubuntu-24.04
-    needs: [verify, sqlx-offline]
+    needs: [verify, sqlx-offline, security]
     permissions:
       contents: read
       packages: write

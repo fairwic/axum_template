@@ -65,6 +65,8 @@ pub struct GoodsOrder {
 }
 
 impl GoodsOrder {
+    // This constructor represents a full aggregate creation command.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Ulid,
         store_id: Ulid,

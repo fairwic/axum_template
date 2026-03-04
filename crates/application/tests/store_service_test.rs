@@ -53,7 +53,7 @@ impl store_service::LbsService for FakeLbs {
 #[tokio::test]
 async fn test_nearby_sorted_by_distance() {
     let repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
-    let lbs: Arc<dyn store_service::LbsService> = Arc::new(FakeLbs::default());
+    let lbs: Arc<dyn store_service::LbsService> = Arc::new(FakeLbs);
     let service = StoreService::new(repo.clone(), lbs);
 
     let store_a = Store::new(
@@ -96,7 +96,7 @@ async fn test_nearby_sorted_by_distance() {
 #[tokio::test]
 async fn test_delivery_fee_calc() {
     let repo: Arc<dyn StoreRepository> = Arc::new(InMemoryStoreRepo::default());
-    let lbs: Arc<dyn store_service::LbsService> = Arc::new(FakeLbs::default());
+    let lbs: Arc<dyn store_service::LbsService> = Arc::new(FakeLbs);
     let service = StoreService::new(repo.clone(), lbs);
 
     let store = Store::new(

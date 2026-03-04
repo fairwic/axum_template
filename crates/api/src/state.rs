@@ -52,6 +52,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_service: UserService,
         admin_service: AdminService,

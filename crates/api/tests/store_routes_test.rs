@@ -299,12 +299,11 @@ async fn test_stores_nearby() {
 
     let user_service = UserService::new(user_repo.clone());
     let admin_service = AdminService::new(admin_repo);
-    let lbs: Arc<dyn axum_application::services::store_service::LbsService> =
-        Arc::new(FakeLbs::default());
+    let lbs: Arc<dyn axum_application::services::store_service::LbsService> = Arc::new(FakeLbs);
     let store_service = StoreService::new(store_repo.clone(), lbs);
     let category_repo: Arc<dyn CategoryRepository> = Arc::new(InMemoryCategoryRepo::default());
     let category_service = CategoryService::new(category_repo);
-    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo::default());
+    let product_repo: Arc<dyn ProductRepository> = Arc::new(InMemoryProductRepo);
     let product_service = ProductService::new(product_repo);
     let cart_repo: Arc<dyn CartRepository> = Arc::new(InMemoryCartRepo::default());
     let cart_service = CartService::new(cart_repo);

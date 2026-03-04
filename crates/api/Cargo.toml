@@ -2,6 +2,7 @@
 name = "axum-api"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [dependencies]
 axum-core-kernel.workspace = true

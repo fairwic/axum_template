@@ -171,7 +171,6 @@ pub async fn create_order(
     auth_user: AuthUser,
     Json(payload): Json<CreateOrderRequest>,
 ) -> crate::error::ApiResult<ApiResponse<OrderResponse>> {
-    let payload = payload;
     let user_id = auth_user.user_id;
     let store_id = parse_ulid(&payload.store_id, "store_id")?;
     let delivery_type = parse_delivery_type(&payload.delivery_type)?;

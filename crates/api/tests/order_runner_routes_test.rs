@@ -538,7 +538,7 @@ async fn create_test_app(store_id: Ulid, product_id: Ulid) -> axum::Router {
     let state = AppState::new(
         UserService::new(user_repo),
         AdminService::new(admin_repo),
-        StoreService::new(store_repo.clone(), Arc::new(FakeLbs::default())),
+        StoreService::new(store_repo.clone(), Arc::new(FakeLbs)),
         CategoryService::new(category_repo),
         ProductService::new(product_repo.clone()),
         CartService::new(cart_repo),
