@@ -33,7 +33,7 @@ impl Default for BizConfig {
 
 #[derive(Clone)]
 pub struct AppState {
-    pub address_service: Arc<AddressService>,
+    pub address_service: Option<Arc<AddressService>>,
     pub jwt_secret: String,
     pub jwt_ttl_secs: u64,
     pub sms_code_ttl_secs: u64,
@@ -41,6 +41,12 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn address_service_ref(&self) -> AppResult<&Arc<AddressService>> {
+        self.address_service
+            .as_ref()
+            .ok_or_else(|| AppError::Internal("address_service is not configured".into()))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         address_service: AddressService,
@@ -58,7 +64,7 @@ impl AppState {
     }
 
     pub fn with_jwt_config(
-        mut self,
+        self,
         jwt_secret: String,
         jwt_ttl_secs: u64,
         sms_code_ttl_secs: u64,
