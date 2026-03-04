@@ -1,6 +1,6 @@
 ---
 name: rust-backend-dev
-description: Rust 后端开发技能，基于 DDD 四层架构。用于开发 BJD 项目的 Rust 后端服务。触发场景：(1) 创建或修改 API Handler、Service、Repository 代码；(2) 设计数据库表结构和 Entity；(3) 实现认证授权逻辑；(4) 处理错误和日志；(5) 编写 DTO 和数据验证；(6) 实现缓存策略；(7) 所有涉及 Rust 后端代码的任务。
+description: Rust 后端开发技能，基于 DDD 四层架构。用于开发 BJD 项目的 Rust 后端服务。触发场景：(1) 创建或修改 API Handler、Service、Repository 代码；(2) 设计数据库表结构和 Entity；(3) 实现认证授权逻辑；(4) 处理错误和日志；(5) 编写 DTO 和数据验证；(6) 实现缓存策略；(7) 初始化新项目脚手架并落盘当前标准目录结构；(8) 所有涉及 Rust 后端代码的任务。
 ---
 
 # Rust 后端开发技能 (BJD 项目)
@@ -21,6 +21,32 @@ description: Rust 后端开发技能，基于 DDD 四层架构。用于开发 BJ
 - 依赖倒置：Domain 定义接口，Infrastructure 实现
 - 禁止跨层调用
 - Domain 层不依赖外部框架
+
+## 脚手架初始化（新增）
+
+当用户要求“按当前项目架构快速起一个新项目骨架”时，执行以下流程：
+
+1. 读取目录模板文档：`references/architecture_scaffold.md`
+2. 运行脚本生成目录与基础文件：
+
+```bash
+bash .claude/skills/rust-backend-dev/scripts/init_project_scaffold.sh <target_dir>
+```
+
+例如：
+
+```bash
+bash .claude/skills/rust-backend-dev/scripts/init_project_scaffold.sh /tmp/new_axum_project
+```
+
+3. 进入目标目录后执行：
+
+```bash
+cargo fmt --all
+cargo check --workspace
+```
+
+脚手架只做“标准结构 + 最小可编译入口”，业务代码按具体需求补充。
 
 ## DTO 分层约定（强制）
 
