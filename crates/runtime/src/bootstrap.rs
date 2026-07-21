@@ -6,7 +6,8 @@ use axum_api::state::AppState;
 use axum_application::snapshot::ingest_service::IngestService;
 use axum_application::AddressService;
 use axum_infra::{
-    AppConfig, NoopEventPublisher, PgAddressRepository, ScyllaHotStore, TemuAdapter, YandexAdapter,
+    AppConfig, InMemoryHotStore, NoopEventPublisher, PgAddressRepository, TemuAdapter,
+    YandexAdapter,
 };
 
 pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow::Result<AppState> {
@@ -14,15 +15,11 @@ pub async fn build_app_state(pool: Pool<Postgres>, config: &AppConfig) -> anyhow
     let address_repo = Arc::new(PgAddressRepository::new(pool.clone()));
     let address_service = AddressService::new(address_repo);
 
-    // 快照热存储（ScyllaDB）
-    let hot_store = Arc::new(
-        ScyllaHotStore::from_config(config)
-            .await
-            .map_err(|e| anyhow::anyhow!("ScyllaDB 连接失败: {e}"))?,
-    );
+    // 快照热存储（内存实现，脚手架默认，不依赖外部存储）
+    let hot_store = Arc::new(InMemoryHotStore::default());
 
     // 事件发布（Noop，不依赖 MQ）
-    let publisher = Arc::new(NoopEventPublisher::default());
+    let publisher = Arc::new(NoopEventPublisher);
 
     // 平台适配器
     let adapters: Vec<Arc<dyn axum_domain::snapshot::ports::PlatformSnapshotAdapter>> =

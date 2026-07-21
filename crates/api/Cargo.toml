@@ -21,6 +21,9 @@ utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
 jsonwebtoken.workspace = true
 async-trait.workspace = true
+validator.workspace = true
+lazy_static = "1.5"
+regex = "1"
 
 # test cicd
 

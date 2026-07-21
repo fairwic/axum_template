@@ -1,2 +1,1 @@
-pub mod s3_cold_store;
-pub mod scylla_hot_store;
+pub mod in_memory_hot_store;

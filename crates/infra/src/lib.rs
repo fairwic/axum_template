@@ -34,5 +34,4 @@ pub use redis::cache::RedisCacheService;
 pub use snapshot::adapters::temu::TemuAdapter;
 pub use snapshot::adapters::yandex::YandexAdapter;
 pub use snapshot::mq::noop_bus::NoopEventPublisher;
-pub use snapshot::storage::s3_cold_store::S3ColdStore;
-pub use snapshot::storage::scylla_hot_store::ScyllaHotStore;
+pub use snapshot::storage::in_memory_hot_store::InMemoryHotStore;

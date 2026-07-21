@@ -34,3 +34,15 @@
 
 **Phase 1 已收敛完成** - `事务边界(UoW)` 已覆盖订单关键路径；`crate 边界重构` 已完成 `core-kernel` 落地。  
 **Phase 2（进行中）** - 已完成 `common-api` 拆分并迁移 API 响应模型；业务层错误类型已直接依赖 `core-kernel`；新增 `common-infra` 作为基础设施公共适配层并完成 SQLx 映射落地；`common` 兼容层已移除并由 CI 防回流守门；`application` 已移除对 `common-api`/`utoipa` 运行时依赖，并通过 domain 类型别名消除 `serde_json` 运行时依赖。
+
+## 治理轮次（脚手架瘦身，2026-07-21）
+
+裁剪重业务依赖，让脚手架回归最小可运行 DDD 骨架，同时修复被 aws-sdk MSRV 卡死的编译：
+
+- **移除消息与存储重依赖**：删除 `aws-config`/`aws-sdk-s3`/`scylla`/`rdkafka`/`async-nats` 五个依赖及对应实现（`s3_cold_store`/`scylla_hot_store`/`kafka_bus`/`nats_bus`），一并解决 rustc 1.91.1 < aws MSRV 1.94.1 的编译失败。
+- **snapshot 能力保留**：新增 `InMemoryHotStore` 作为默认 `HotStore` 实现（参照 `memory/cache.rs`），`EventPublisher` 沿用 `NoopEventPublisher`；`IngestService` 与 API 契约不变。删除无调用方的 `ColdStore` port。
+- **删除死代码聚合**：移除 `domain/src/{store,user}` 及 `lib.rs` 导出。
+- **清理失效测试**：删除引用已删类型的 9 个测试文件（store/user/order/admin 系列），保留 `address_service_test`、`auth_jwt_test`。
+- **清理 AppState 业务污染**：移除 `BizConfig`（跑腿字段）与无调用方的 `with_jwt_config`。
+- **worker 占位收敛**：`spawn_order_jobs` → `spawn_background_jobs`，`print!` 改为 `tracing::debug!`。
+- **验收**：`cargo check --workspace --all-targets`、`cargo clippy --all-targets`（零警告）、`cargo test --workspace`（全通过）、`cargo fmt --check` 全绿；残留 grep 清零。

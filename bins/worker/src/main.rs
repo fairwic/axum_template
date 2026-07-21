@@ -6,7 +6,7 @@ use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use axum_infra::AppConfig;
-use axum_runtime::{build_app_state, spawn_order_jobs};
+use axum_runtime::{build_app_state, spawn_background_jobs};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         .context("Failed to connect to database")?;
 
     let state = build_app_state(pool, &config).await?;
-    let worker_handle = spawn_order_jobs(state, 30);
+    let worker_handle = spawn_background_jobs(state, 30);
 
     tracing::info!("Worker scheduler loop started (interval=30s)");
     shutdown_signal().await;

@@ -62,6 +62,9 @@ rand = "0.8"
 # Password Hashing
 bcrypt = "0.15"
 
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
 # OpenAPI Documentation
 utoipa = { version = "5", features = ["axum_extras", "chrono", "ulid"] }
 utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }

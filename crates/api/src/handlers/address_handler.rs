@@ -5,24 +5,13 @@ use axum::{
     Json,
 };
 use axum_api_common::ApiResponse;
-use axum_application::{AddressService, CreateAddressInput, UpdateAddressInput};
-use axum_core_kernel::AppResult;
+use axum_application::AddressService;
+use axum_core_kernel::{AppError, AppResult};
+use validator::Validate;
 
 use crate::dtos::address_dto::{AddressResponse, CreateAddressRequest, UpdateAddressRequest};
 use crate::extractors::{parse_ulid, AuthUser};
 use crate::state::AppState;
-
-fn to_response(address: axum_domain::Address) -> AddressResponse {
-    AddressResponse {
-        address_id: address.id.to_string(),
-        name: address.name,
-        phone: address.phone,
-        detail: address.detail,
-        lat: address.lat,
-        lng: address.lng,
-        is_default: address.is_default,
-    }
-}
 
 fn get_service(state: &AppState) -> AppResult<AddressService> {
     Ok((**state.address_service_ref()?).clone())
@@ -42,7 +31,7 @@ pub async fn list_addresses(
     let user_id = auth_user.user_id;
     let addresses = get_service(&state)?.list(user_id).await?;
     Ok(ApiResponse::success(
-        addresses.into_iter().map(to_response).collect(),
+        addresses.into_iter().map(AddressResponse::from).collect(),
     ))
 }
 
@@ -59,21 +48,14 @@ pub async fn create_address(
     auth_user: AuthUser,
     Json(payload): Json<CreateAddressRequest>,
 ) -> crate::error::ApiResult<ApiResponse<AddressResponse>> {
+    // 验证请求参数
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
     let user_id = auth_user.user_id;
-    let address = get_service(&state)?
-        .create(
-            user_id,
-            CreateAddressInput {
-                name: payload.name,
-                phone: payload.phone,
-                detail: payload.detail,
-                lat: payload.lat,
-                lng: payload.lng,
-                is_default: payload.is_default,
-            },
-        )
-        .await?;
-    Ok(ApiResponse::success(to_response(address)))
+    let address = get_service(&state)?.create(user_id, payload.into()).await?;
+    Ok(ApiResponse::success(address.into()))
 }
 
 #[utoipa::path(
@@ -91,23 +73,17 @@ pub async fn update_address(
     Path(address_id): Path<String>,
     Json(payload): Json<UpdateAddressRequest>,
 ) -> crate::error::ApiResult<ApiResponse<AddressResponse>> {
+    // 验证请求参数
+    payload
+        .validate()
+        .map_err(|e| AppError::Validation(e.to_string()))?;
+
     let user_id = auth_user.user_id;
     let address_id = parse_ulid(&address_id, "address_id")?;
     let address = get_service(&state)?
-        .update(
-            user_id,
-            address_id,
-            UpdateAddressInput {
-                name: payload.name,
-                phone: payload.phone,
-                detail: payload.detail,
-                lat: payload.lat,
-                lng: payload.lng,
-                is_default: payload.is_default,
-            },
-        )
+        .update(user_id, address_id, payload.into())
         .await?;
-    Ok(ApiResponse::success(to_response(address)))
+    Ok(ApiResponse::success(address.into()))
 }
 
 #[utoipa::path(
@@ -147,5 +123,5 @@ pub async fn set_default_address(
     let address = get_service(&state)?
         .set_default(user_id, address_id)
         .await?;
-    Ok(ApiResponse::success(to_response(address)))
+    Ok(ApiResponse::success(address.into()))
 }

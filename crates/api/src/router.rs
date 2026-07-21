@@ -1,8 +1,7 @@
 //! API Router Configuration
 
-use axum::{middleware, routing::get, Json, Router};
+use axum::{routing::get, Json, Router};
 
-use crate::auth::middleware::require_user_auth;
 use crate::handlers::health_handler;
 use crate::openapi::openapi;
 use crate::routes::address;
@@ -12,14 +11,7 @@ pub fn create_router(state: AppState) -> Router {
     let public_api_routes = Router::<AppState>::new()
         .merge(address::routes())
         .merge(crate::routes::snapshot::routes());
-    // let protected_api_routes = Router::<AppState>::new()
-    //     .merge(address::routes())
-    //     .route_layer(middleware::from_fn_with_state(
-    //         state.clone(),
-    //         require_user_auth,
-    //     ));
     let api_routes = Router::<AppState>::new().merge(public_api_routes);
-    // .merge(protected_api_routes);
 
     let openapi_route = Router::<AppState>::new()
         .route("/api-docs/openapi.json", get(|| async { Json(openapi()) }));

@@ -20,12 +20,6 @@ pub trait HotStore: Send + Sync {
 }
 
 #[async_trait]
-pub trait ColdStore: Send + Sync {
-    async fn archive_product(&self, snapshot: &ProductSnapshot) -> Result<(), DomainError>;
-    async fn archive_shop(&self, snapshot: &ShopSnapshot) -> Result<(), DomainError>;
-}
-
-#[async_trait]
 pub trait EventPublisher: Send + Sync {
     async fn publish(
         &self,
