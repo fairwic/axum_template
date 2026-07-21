@@ -125,6 +125,111 @@ core-kernel (AppError/DomainError)
 
 ### 编码规范
 
+#### DTO 规范
+
+**分层与命名**：
+
+- **API 层 DTO**（`crates/api/src/dtos/`）：
+  - `XxxRequest`：HTTP 请求入参（带 `Deserialize` + `ToSchema` + `Validate`）
+  - `XxxResponse`：HTTP 响应出参（带 `Serialize` + `ToSchema`）
+  - 职责：HTTP 边界序列化、参数验证、OpenAPI 文档生成
+  
+- **Application 层 DTO**（`crates/application/src/dtos/`）：
+  - `XxxInput`：Service 方法入参（纯 Rust 结构体，无 serde/utoipa 依赖）
+  - 职责：业务层参数传递、解耦 HTTP 框架依赖
+
+**验证规范**（使用 `validator` crate）：
+
+```rust
+use validator::{Validate, ValidationError};
+
+#[derive(Debug, Deserialize, ToSchema, Validate)]
+pub struct CreateAddressRequest {
+    #[validate(length(min = 1, max = 50, message = "..."))]
+    pub name: String,
+    
+    #[validate(custom(function = "validate_phone", message = "..."))]
+    pub phone: String,
+    
+    #[validate(range(min = -90.0, max = 90.0, message = "..."))]
+    pub lat: Option<f64>,
+}
+
+// 自定义验证函数
+fn validate_phone(phone: &str) -> Result<(), ValidationError> {
+    if is_valid_format(phone) {
+        Ok(())
+    } else {
+        Err(ValidationError::new("invalid_phone_format"))
+    }
+}
+```
+
+- Handler 中必须调用 `payload.validate().map_err(...)?` 触发验证。
+- 所有字段必须带验证约束（长度/范围/格式/自定义规则）。
+- 验证错误消息用中文，清晰描述约束条件。
+
+**转换规范**（实现 `From` trait）：
+
+```rust
+// Request → Application Input
+impl From<CreateAddressRequest> for CreateAddressInput {
+    fn from(req: CreateAddressRequest) -> Self {
+        Self {
+            name: req.name,
+            phone: req.phone,
+            // ...
+        }
+    }
+}
+
+// Domain Entity → Response
+impl From<Address> for AddressResponse {
+    fn from(addr: Address) -> Self {
+        Self {
+            address_id: addr.id.to_string(),
+            name: addr.name,
+            // ...
+        }
+    }
+}
+
+// Handler 中使用
+let address = service.create(user_id, payload.into()).await?;
+Ok(ApiResponse::success(address.into()))
+```
+
+禁止手动逐字段转换（易遗漏字段、难维护）。
+
+**文档规范**（OpenAPI + Swagger UI）：
+
+```rust
+#[derive(Debug, Deserialize, ToSchema, Validate)]
+#[schema(example = json!({
+    "name": "张三",
+    "phone": "13800138000",
+    "detail": "北京市朝阳区xx路xx号"
+}))]
+/// 创建收货地址请求（顶层注释：功能描述）
+pub struct CreateAddressRequest {
+    /// 收货人姓名（1-50 字符）  ← 字段注释：说明 + 约束
+    #[schema(example = "张三")]
+    pub name: String,
+    
+    /// 手机号（11 位数字）
+    #[schema(example = "13800138000")]
+    pub phone: String,
+}
+```
+
+- 所有 Request/Response 必须带顶层 `#[schema(example = json!(...))]`。
+- 每个字段必须带文档注释（`///`）+ `#[schema(example = "...")]`。
+- 示例数据使用真实业务场景（如"张三"、"北京市朝阳区"，而非"test"、"xxx"）。
+
+**标准示例**：参考 `crates/api/src/dtos/address_dto.rs` 实现。
+
+#### 通用编码规范
+
 1. **注释要求**：
    - 每个新增 `struct`/`enum`/`pub fn` 必须加文档注释（`///` 或 `//!`）。
    - 内部业务复杂的函数写清楚逻辑分支与前置条件。
@@ -200,13 +305,34 @@ core-kernel (AppError/DomainError)
 
 ## 代码提交制约（快速参考）
 
-确保合并节点未被挂起，触发前核心执行安全要求：
+**一键检查工具**（推荐）：
 
 ```bash
-cargo clippy --workspace --all-targets --all-features
-cargo fmt --all
-cargo test --workspace
+./scripts/dev/pre-commit-check.sh  # 运行所有规范检查（文件行数/格式/Clippy/编译/测试）
 ```
+
+**快速修复工具**：
+
+```bash
+./scripts/dev/quick-fix.sh         # 自动格式化 + Clippy 自动修复 + SQLx 缓存更新
+```
+
+**手动检查**（与一键工具等效）：
+
+```bash
+cargo clippy --workspace --all-targets --all-features  # 静态检查
+cargo fmt --all                                         # 代码格式化
+cargo test --workspace                                  # 运行测试
+./scripts/dev/check_code_file_line_limit.sh            # 文件行数检查
+```
+
+**DTO 验证测试**（可选，需服务运行）：
+
+```bash
+./scripts/dev/test-dto-validation.sh  # 交互式测试 API 验证规则
+```
+
+**核心约束**：
 
 严格保持领域向下依赖约束：API 层只能请求 Application，不可越阶跨越。
 基础 SQL 查询存在跨级绑定要求，离线检查在 CI 中通过环境变量 `SQLX_OFFLINE=true` 控制。

@@ -1,10 +1,23 @@
+#![allow(unused_imports)] // json! 宏在 schema example 中使用，clippy 检测不到
+
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use utoipa::ToSchema;
-use validator::Validate;
+use validator::{Validate, ValidationError};
 
 use axum_application::{CreateAddressInput, UpdateAddressInput};
 use axum_domain::Address;
+
+// ========== 验证辅助函数 ==========
+
+/// 验证中国大陆手机号格式（1 开头 11 位数字）
+fn validate_phone(phone: &str) -> Result<(), ValidationError> {
+    if phone.len() == 11 && phone.starts_with('1') && phone.chars().all(|c| c.is_ascii_digit()) {
+        Ok(())
+    } else {
+        Err(ValidationError::new("invalid_phone_format"))
+    }
+}
 
 #[derive(Debug, Deserialize, ToSchema, Validate)]
 #[schema(example = json!({
@@ -25,7 +38,7 @@ pub struct CreateAddressRequest {
     /// 手机号（11 位数字）
     #[validate(
         length(equal = 11, message = "手机号必须为 11 位数字"),
-        regex(path = "PHONE_REGEX", message = "手机号格式不正确")
+        custom(function = "validate_phone", message = "手机号格式不正确")
     )]
     #[schema(example = "13800138000")]
     pub phone: String,
@@ -69,7 +82,7 @@ pub struct UpdateAddressRequest {
     /// 手机号（11 位数字）
     #[validate(
         length(equal = 11, message = "手机号必须为 11 位数字"),
-        regex(path = "PHONE_REGEX", message = "手机号格式不正确")
+        custom(function = "validate_phone", message = "手机号格式不正确")
     )]
     #[schema(example = "13900139000")]
     pub phone: String,
@@ -177,11 +190,4 @@ impl From<Address> for AddressResponse {
             is_default: addr.is_default,
         }
     }
-}
-
-// ========== 验证正则 ==========
-
-lazy_static::lazy_static! {
-    /// 中国大陆手机号正则（1 开头 11 位数字）
-    static ref PHONE_REGEX: regex::Regex = regex::Regex::new(r"^1[3-9]\d{9}$").unwrap();
 }
